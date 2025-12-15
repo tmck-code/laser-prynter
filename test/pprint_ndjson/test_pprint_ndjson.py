@@ -1,4 +1,4 @@
-from pp import pp
+from pprint_ndjson import pp
 
 from collections import namedtuple
 from dataclasses import dataclass

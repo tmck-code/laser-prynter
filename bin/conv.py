@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pp.colour import c, gradient
+from pprint_ndjson.colour import c, gradient
 
 for i in range(16, 232):
     cell = c.from_ansi(i)

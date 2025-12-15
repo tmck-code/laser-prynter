@@ -1,5 +1,5 @@
 [project]
-name = "pp"
+name = "pprint-ndjson"
 version = "0.2.3"
 authors = [
   { name="tmck-code", email="tmck01@gmail.com" },
@@ -14,5 +14,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tmck-code/pp"
-Issues = "https://github.com/tmck-code/pp/issues"
+Homepage = "https://github.com/tmck-code/pprint-ndjson"
+Issues = "https://github.com/tmck-code/pprint-ndjson/issues"

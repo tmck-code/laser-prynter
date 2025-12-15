@@ -66,3 +66,10 @@ def ps(s: str, style: str='yellow', random_style: bool=False) -> str:
 def pps(s: str, style: str='yellow', random_style: bool=False) -> None:
     'pretty-print a string'
     print(ps(s, style=style, random_style=random_style))
+
+def demo() -> None:
+    'demonstrate pretty-printing colours'
+
+    for s in STYLES:
+        ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, indent=None)
+

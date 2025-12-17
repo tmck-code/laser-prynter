@@ -1,4 +1,4 @@
-from pp.colour import c
+from pprint_ndjson.colour import c
 
 class TestC:
     def test_ansi_to_rgb(self):

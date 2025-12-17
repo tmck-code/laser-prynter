@@ -9,7 +9,7 @@ import os
 import re
 from typing import List, TypeAlias, Iterable, Literal, Iterator, Dict
 
-from pp.colour import c
+from pprint_ndjson.colour import c
 
 Cell: TypeAlias = c.ANSIColour
 Row = List[Cell]

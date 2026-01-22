@@ -1,4 +1,4 @@
-from pprint_ndjson import pp
+from laser_prynter import pp
 
 from collections import namedtuple
 from dataclasses import dataclass

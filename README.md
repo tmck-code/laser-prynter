@@ -1,4 +1,4 @@
-# pp
+# laser-prynter
 terminal/cli/python helpers for colour and pretty-printing
 
 - [laser_prynter](#laser_prynter)

@@ -34,7 +34,7 @@ from logging.handlers import  TimedRotatingFileHandler
 import os
 import sys
 
-from pprint_ndjson.pp import _json_default
+from laser_prynter.pp import _json_default
 
 class LogLevel:
     'An enum type for log levels.'

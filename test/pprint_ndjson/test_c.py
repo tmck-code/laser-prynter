@@ -1,4 +1,4 @@
-from pprint_ndjson.colour import c
+from laser_prynter.colour import c
 
 class TestC:
     def test_ansi_to_rgb(self):

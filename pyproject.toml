@@ -1,12 +1,12 @@
 [project]
-name = "pprint-ndjson"
+name = "laser-prynter"
 version = "0.2.5"
 authors = [
   { name="tmck-code", email="tmck01@gmail.com" },
 ]
 description = "terminal/cli/python helpers for colour and pretty-printing"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -14,5 +14,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tmck-code/pprint-ndjson"
-Issues = "https://github.com/tmck-code/pprint-ndjson/issues"
+Homepage = "https://github.com/tmck-code/laser-prynter"
+Issues = "https://github.com/tmck-code/laser-prynter/issues"

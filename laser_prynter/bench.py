@@ -32,7 +32,7 @@ import time, sys, os
 from typing import Callable, Any
 import statistics
 
-from pprint_ndjson import pp
+from laser_prynter import pp
 
 Test = namedtuple('Test', 'args kwargs expected n')
 class NoExpectation:

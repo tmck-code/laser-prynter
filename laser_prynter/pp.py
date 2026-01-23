@@ -13,6 +13,7 @@ STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
     'one-dark', 'perldoc', 'tango',
 )
+# disable printing by setting `pp.enabled = False`
 enabled = True
 
 def _print(s: str, **kwargs) -> None:

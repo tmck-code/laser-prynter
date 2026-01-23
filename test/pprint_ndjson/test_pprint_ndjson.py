@@ -3,107 +3,110 @@ from laser_prynter import pp
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
+from io import StringIO
 
 class TestJSONDefault:
-    def test_json_default_str(self, capsys):
+    def test_str(self):
         'Print a dict as JSON'
 
-        pp.ppd({'a': 'b'}, indent=None, style=None)
+        s = StringIO()
+        pp.ppd({'a': 'b'}, indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": "b"}'
+        assert s.getvalue().strip() == '{"a": "b"}'
 
-    def test_json_default_dataclass(self, capsys):
+    def test_dataclass(self):
         'Print a dataclass as JSON'
 
+        s = StringIO()
         @dataclass
         class A:
             a: str
-        pp.ppd(A('b'), indent=None, style=None)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": "b"}'
+        pp.ppd(A('b'), indent=None, style=None, file=s)
 
-    def test_json_default_datetime(self, capsys):
+        assert s.getvalue().strip() == '{"a": "b"}'
+
+    def test_datetime(self):
         'Print a datetime as JSON'
 
-        pp.ppd({'a': datetime(2021, 1, 1, 12, 34, 56)}, indent=None, style=None)
+        s = StringIO()
+        pp.ppd({'a': datetime(2021, 1, 1, 12, 34, 56)}, indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": "2021-01-01T12:34:56"}'
+        assert s.getvalue().strip() == '{"a": "2021-01-01T12:34:56"}'
 
-    def test_json_default_class(self, capsys):
+    def test_class(self):
         'Print a class instance as JSON'
 
+        s = StringIO()
         class A:
             def __init__(self, a):
                 self.a = a
-        pp.ppd({'a': A('b')}, indent=None, style=None)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": {"a": "b"}}'
+        pp.ppd({'a': A('b')}, indent=None, style=None, file=s)
 
-    def test_json_default_function(self, capsys):
+        assert s.getvalue().strip() == '{"a": {"a": "b"}}'
+
+    def test_function(self):
         'Print a function as JSON'
 
+        s = StringIO()
         def a(): pass
 
-        pp.ppd({'a': a}, indent=None, style=None)
+        pp.ppd({'a': a}, indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": "a()"}'
+        assert s.getvalue().strip() == '{"a": "a()"}'
 
-    def test_json_default_slots(self, capsys):
+    def test_slots(self):
         'Print a class with __slots__ as JSON'
 
+        s = StringIO()
         class A:
             __slots__ = ['a']
             def __init__(self, a):
                 self.a = a
-        pp.ppd({'a': A('b')}, indent=None, style=None)
+        pp.ppd({'a': A('b')}, indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": {"a": "b"}}'
+        assert s.getvalue().strip() == '{"a": {"a": "b"}}'
 
-    def test_json_default_namedtuple(self, capsys):
+    def test_namedtuple(self):
         'Print a namedtuple as JSON'
 
+        s = StringIO()
         Testr = namedtuple('testr', ('a', 'b'))
-        pp.ppd({'x': Testr(1, 2)}, indent=None, style=None)
 
-        captured = capsys.readouterr()
+        pp.ppd({'x': Testr(1, 2)}, indent=None, style=None, file=s)
 
-        assert captured.out.strip() == '{"x": {"a": 1, "b": 2}}'
+        assert s.getvalue().strip() == '{"x": {"a": 1, "b": 2}}'
 
-    def test_json_default_list_of_namedtuple(self, capsys):
+    def test_list_of_namedtuple(self):
         'Print a namedtuple as JSON'
 
+        s = StringIO()
         Testr = namedtuple('testr', ('a', 'b'))
-        pp.ppd([Testr(1, 2), Testr(3, 4)], indent=None, style=None)
+        pp.ppd([Testr(1, 2), Testr(3, 4)], indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
+        assert s.getvalue().strip() == '[{"a": 1, "b": 2}, {"a": 3, "b": 4}]'
 
-        assert captured.out.strip() == '[{"a": 1, "b": 2}, {"a": 3, "b": 4}]'
-
-    def test_json_default_other(self, capsys):
+    def test_other(self):
         'Print an object with a __str__ method as JSON'
 
+        s = StringIO()
         class Testr:
             def t(self): pass
 
         t = Testr()
-        pp.ppd({'a': t.t}, indent=None, style=None)
+        pp.ppd({'a': t.t}, indent=None, style=None, file=s)
 
-        captured = capsys.readouterr()
-        assert captured.out.strip() == '{"a": "t"}'
+        assert s.getvalue().strip() == '{"a": "t"}'
 
-class TestTypeDetection:
+
+class TestNormalise:
+
     def test_is_namedtuple(self):
         Testr = namedtuple('testr', ('a', 'b'))
         t = Testr(1,2)
-        assert pp._isnamedtuple(t) is True
 
-class TestNormaliseNamedTuple:
+        assert pp._isnamedtuple(t) is True
 
     def test_normalise(self):
         Testr = namedtuple('testr', ('a', 'b'))
@@ -120,3 +123,4 @@ class TestNormaliseNamedTuple:
                 {'a': 3, 'b': 4},
             ]
         }
+

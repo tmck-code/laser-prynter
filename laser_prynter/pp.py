@@ -23,9 +23,18 @@ def _print(s: str, **kwargs) -> None:
 def _isnamedtuple(obj: object):
     return isinstance(obj, tuple) and hasattr(obj, '_fields')
 
+def _normalise_keys(d: dict):
+    'norlimalise dict keys for JSON by stringifying'
+    for k,v in d.items():
+        if not isinstance(k, str):
+            yield str(k), _normalise(v)
+        else:
+            yield k, _normalise(v)
+
 def _normalise(obj: object):
     'step through obj and normalise namedtuples to dicts'
-    if isinstance(obj, dict): return {k: _normalise(v) for k, v in obj.items()}
+    if isinstance(obj, dict):
+        return dict(_normalise_keys(obj))
     if isinstance(obj, list): return [_normalise(i) for i in obj]
     if _isnamedtuple(obj):    return obj._asdict()
     return obj

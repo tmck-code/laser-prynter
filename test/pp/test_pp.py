@@ -99,16 +99,29 @@ class TestJSONDefault:
 
         assert s.getvalue().strip() == '{"a": "t"}'
 
+    def test_tuple_keys(self):
+        'Print a dict with tuple keys as JSON'
+
+        s = StringIO()
+        pp.ppd({('a', 'b'): 'c'}, indent=None, style=None, file=s)
+
+        assert s.getvalue().strip() == '{"(\'a\', \'b\')": "c"}'
+
+
 
 class TestNormalise:
 
     def test_is_namedtuple(self):
+        'Detect if an object is a namedtuple'
+
         Testr = namedtuple('testr', ('a', 'b'))
         t = Testr(1,2)
 
         assert pp._isnamedtuple(t) is True
 
     def test_normalise(self):
+        'Normalise namedtuples into dicts'
+
         Testr = namedtuple('testr', ('a', 'b'))
 
         result = pp._normalise({

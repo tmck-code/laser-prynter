@@ -100,6 +100,32 @@ class TestJSONDefault:
         assert s.getvalue().strip() == '{"a": "t"}'
 
 
+class TestArguments:
+
+    def test_enabled(self):
+        'The enabled property should toggle print output on & off'
+
+        pp.enabled = False
+        s = StringIO()
+        pp.ppd({'a': 'b'}, indent=None, style=None, file=s)
+
+        assert s.getvalue() == ''
+
+        pp.enabled = True
+        s2 = StringIO()
+        pp.ppd({'a': 'b'}, indent=None, style=None, file=s2)
+
+        assert s2.getvalue().strip() == '{"a": "b"}'
+
+    def test_indent(self):
+        'The indent property should set the indentation level'
+
+        s = StringIO()
+        pp.ppd({'a': {'b': 'c'}}, indent=2, style=None, file=s)
+
+        assert s.getvalue().strip() == '{\n  "a": {\n    "b": "c"\n  }\n}'
+
+
 class TestNormalise:
 
     def test_is_namedtuple(self):

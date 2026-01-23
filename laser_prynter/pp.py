@@ -13,6 +13,11 @@ STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
     'one-dark', 'perldoc', 'tango',
 )
+enabled = True
+
+def _print(s: str, **kwargs) -> None:
+    if enabled:
+        print(s, **kwargs)
 
 def _isnamedtuple(obj: object):
     return isinstance(obj, tuple) and hasattr(obj, '_fields')
@@ -36,7 +41,7 @@ def _json_default(obj: object):
     elif hasattr(obj, '__dict__'):      return obj.__dict__ # class
     return str(obj)
 
-def ppd(d_obj, indent=2, style='dracula', random_style=False):
+def ppd(d_obj, indent=2, style='dracula', random_style: bool=False, **kwargs):
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
 
@@ -45,17 +50,20 @@ def ppd(d_obj, indent=2, style='dracula', random_style=False):
     code = json.dumps(d, indent=indent, default=_json_default)
 
     if style is None:
-        print(code)
+        _print(code, **kwargs)
     else:
-        print(highlight(
-            code      = code,
-            lexer     = JsonLexer(),
-            formatter = Terminal256Formatter(style=get_style_by_name(style))
-        ).strip())
+        _print(
+            highlight(
+                code      = code,
+                lexer     = JsonLexer(),
+                formatter = Terminal256Formatter(style=get_style_by_name(style))
+            ).strip(),
+            **kwargs,
+        )
 
-def ppj(j: str, indent: int=None, style: str='dracula', random_style: bool=False) -> None:
+def ppj(j: str, indent: int=None, style: str='dracula', random_style: bool=False, **kwargs) -> None:
     'pretty-print a JSON string'
-    ppd(json.loads(j), indent=indent, style=style, random_style=random_style)
+    ppd(_normalise(json.loads(j)), indent=indent, style=style, random_style=random_style)
 
 def ps(s: str, style: str='yellow', random_style: bool=False) -> str:
     'add color to a string'
@@ -65,11 +73,11 @@ def ps(s: str, style: str='yellow', random_style: bool=False) -> str:
 
 def pps(s: str, style: str='yellow', random_style: bool=False) -> None:
     'pretty-print a string'
-    print(ps(s, style=style, random_style=random_style))
+    _print(ps(s, style=style, random_style=random_style))
 
-def demo() -> None:
+def demo(**kwargs) -> None:
     'demonstrate pretty-printing colours'
 
     for s in STYLES:
-        ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, indent=None)
+        ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, indent=None, **kwargs)
 

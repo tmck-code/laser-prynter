@@ -2,6 +2,7 @@ from dataclasses import asdict, is_dataclass, dataclass
 from datetime import datetime
 import json
 import random
+import sys
 from types import FunctionType
 
 from pygments import highlight, console
@@ -13,8 +14,14 @@ STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
     'one-dark', 'perldoc', 'tango',
 )
+DEFAULT_STYLE = 'dracula'
+
 # disable printing by setting `pp.enabled = False`
 enabled = True
+
+def _output_is_redirected(stream=sys.stdout) -> bool:
+    'detect if output is being redirected to a file or pipe'
+    return sys.stdout.isatty() is False
 
 def _print(s: str, **kwargs) -> None:
     if enabled:
@@ -55,7 +62,9 @@ def ppd(d_obj, indent=2, style='dracula', random_style: bool=False, **kwargs):
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
 
-    if random_style:
+    if _output_is_redirected(kwargs.get('file', sys.stdout)):
+        style = None
+    elif random_style:
         style = random.choice(STYLES)
     code = json.dumps(d, indent=indent, default=_json_default)
 

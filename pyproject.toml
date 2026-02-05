@@ -1,6 +1,6 @@
 [project]
 name = "laser-prynter"
-version = "0.2.7"
+version = "0.2.8"
 authors = [
   { name="tmck-code", email="tmck01@gmail.com" },
 ]

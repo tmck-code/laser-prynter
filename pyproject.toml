@@ -1,6 +1,6 @@
 [project]
 name = "laser-prynter"
-version = "0.2.7"
+version = "0.2.8"
 authors = [
   { name="tmck-code", email="tmck01@gmail.com" },
 ]
@@ -13,8 +13,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = "BSD-3-Clause"
-license-files = ["LICENSE"]
 
 [project.urls]
 Homepage = "https://github.com/tmck-code/laser-prynter"

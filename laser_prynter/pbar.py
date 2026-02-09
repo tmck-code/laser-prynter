@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
 from random import randint
 import shutil
 import time
@@ -23,9 +24,21 @@ class PBar:
     def __init__(self, total: int, c1: RGB=DEFAULT_C1, c2: RGB=DEFAULT_C2):
         self.t = total
         self.w = shutil.get_terminal_size().columns
-        self.curr, self.g = 0, interp_xyz(c1, c2, max(self.t+1, self.w))
-        self._iter_pbar = iter(self._pbar())
+        self.curr = 0
+        self.g = interp_xyz(c1, c2, max(self.t+1, self.w))
+        self._iter_pbar = iter(self._pbar())        # Print initial bar in end color
+        print(f'\x1b[38;2;{c2.r};{c2.g};{c2.b}m' + '▉' * self.w + '\x1b[0m', end='', flush=True)
+        print('\r', end='', flush=True)  # Return to start of line
 
+    def grad(self, c1: RGB, c2: RGB):
+        self.g = interp_xyz(c1, c2, max(self.t+1, self.w))
+        self._iter_pbar = iter(self._pbar())
+        return self
+
+    def randgrad(self):
+        self.c1 = RGB(randint(0,255), randint(0,255), randint(0,255))
+        self.c2 = RGB(randint(0,255), randint(0,255), randint(0,255))
+        return self.grad(self.c1, self.c2)
 
     def _pbar(self):
         for i, (r,g,b) in zip(indexes(self.t, self.w), self.g):
@@ -45,7 +58,6 @@ class PBar:
         for _ in range(n):
             next(self)
 
-
     def __enter__(self):
         return self
 
@@ -55,11 +67,11 @@ class PBar:
 
 if __name__ == '__main__':
     import time
-    c1, c2 = RGB(randint(0,255),randint(0,255),randint(0,255)), RGB(randint(0,255),randint(0,255),randint(0,255))
-    # for i in PBar(100, c1, c2):
-    #     time.sleep(0.05)
-    with PBar(100, c1, c2) as pbar:
-        for i in range(100):
-            pbar.update(1)
-            time.sleep(0.05)
+    c1, c2 = RGB(255,0,0), RGB(0,255,0)
+    for i in PBar(100).grad(c1, c2):
+        time.sleep(0.05)
+    # clear the bar
+    print('\r' + ' ' * shutil.get_terminal_size().columns + '\r', end='', flush=True)
+    for i in PBar(100).randgrad():
+        time.sleep(0.05)
 

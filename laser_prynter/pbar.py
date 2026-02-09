@@ -8,41 +8,55 @@ from typing import NamedTuple
 
 from laser_prynter.colour.gradient import interp_xyz
 
+
 def indexes(t, w):
-    for i in range(max(t+1,w)):
-        yield int(i*(max(w,t)/min(w,t)))
+    for i in range(max(t + 1, w)):
+        yield int(i * (max(w, t) / min(w, t)))
+
 
 class RGB(NamedTuple):
     r: int
     g: int
     b: int
 
-DEFAULT_C1, DEFAULT_C2 = RGB(240,50,0), RGB(10,220,0)
+
+DEFAULT_C1, DEFAULT_C2 = RGB(240, 50, 0), RGB(10, 220, 0)
 
 
 class PBar:
-    def __init__(self, total: int, c1: RGB=DEFAULT_C1, c2: RGB=DEFAULT_C2):
+    def __init__(self, total: int, c1: RGB = DEFAULT_C1, c2: RGB = DEFAULT_C2):
         self.t = total
         self.w = shutil.get_terminal_size().columns
+        self.c1, self.c2 = c1, c2
         self.curr = 0
-        self.g = interp_xyz(c1, c2, max(self.t+1, self.w))
-        self._iter_pbar = iter(self._pbar())        # Print initial bar in end color
-        print(f'\x1b[38;2;{c2.r};{c2.g};{c2.b}m' + '▉' * self.w + '\x1b[0m', end='', flush=True)
-        print('\r', end='', flush=True)  # Return to start of line
+        self.g = interp_xyz(c1, c2, self.t + 1)
+        self._iter_pbar = iter(self._pbar())
+        self._initial_bar()
+
+    def _initial_bar(self):
+        "print initial bar in end color"
+        print(
+            f'\x1b[38;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + '▉' * self.w + '\x1b[0m',
+            end='',
+            flush=True,
+        )
+        print('\r', end='', flush=True)
 
     def grad(self, c1: RGB, c2: RGB):
-        self.g = interp_xyz(c1, c2, max(self.t+1, self.w))
+        self.g = interp_xyz(c1, c2, self.t + 1)
         self._iter_pbar = iter(self._pbar())
         return self
 
-    def randgrad(self):
-        self.c1 = RGB(randint(0,255), randint(0,255), randint(0,255))
-        self.c2 = RGB(randint(0,255), randint(0,255), randint(0,255))
-        return self.grad(self.c1, self.c2)
+    @staticmethod
+    def randgrad():
+        return (
+            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
+            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
+        )
 
     def _pbar(self):
-        for i, (r,g,b) in zip(indexes(self.t, self.w), self.g):
-            yield ((i, (r,g,b)) for _ in range(self.curr, i))
+        for i, (r, g, b) in zip(indexes(self.t, self.w), self.g):
+            yield ((i, (r, g, b)) for _ in range(self.curr, i))
 
     def __iter__(self):
         return self
@@ -50,7 +64,7 @@ class PBar:
     def __next__(self):
         if self.curr >= max(self.t, self.w):
             raise StopIteration
-        for i, (r,g,b) in next(self._iter_pbar):
+        for i, (r, g, b) in next(self._iter_pbar):
             print(f'\x1b[38;2;{int(r)};{int(g)};{int(b)}m▉\x1b[0m', end='', flush=True)
             self.curr = i
 
@@ -61,17 +75,18 @@ class PBar:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
         self.curr = self.t
 
 
 if __name__ == '__main__':
     import time
-    c1, c2 = RGB(255,0,0), RGB(0,255,0)
-    for i in PBar(100).grad(c1, c2):
-        time.sleep(0.05)
-    # clear the bar
-    print('\r' + ' ' * shutil.get_terminal_size().columns + '\r', end='', flush=True)
-    for i in PBar(100).randgrad():
-        time.sleep(0.05)
 
+    c1, c2 = RGB(255, 0, 0), RGB(0, 255, 0)
+    for i in PBar(200, c1, c2):
+        time.sleep(0.01)
+    print('\r' + ' ' * shutil.get_terminal_size().columns + '\r', end='', flush=True)
+
+    # clear the bar
+    for i in PBar(100, *PBar.randgrad()):
+        time.sleep(0.05)

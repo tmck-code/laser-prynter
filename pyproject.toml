@@ -18,6 +18,18 @@ classifiers = [
 Homepage = "https://github.com/tmck-code/laser-prynter"
 Issues = "https://github.com/tmck-code/laser-prynter/issues"
 
+dependencies = [
+  "pygments",
+]
+[dependency-groups]
+dev = [
+  "build",
+  "mypy",
+  "ruff",
+  "twine",
+]
+
+
 [tool.ruff]
 exclude = ["bin/", ".venv/", "test/"]
 line-length = 100

@@ -211,9 +211,9 @@ class RGBCubeCollection:
         self.width = os.get_terminal_size().columns
 
     def print(self, grid_sep: str = ' '*2, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> None:
-        groups, current_group, current_width = [], {}, 0
+        groups, current_group = [], {}
         for name, cube in self.cubes.items():
-            if sum(c.str_width for c in current_group.values()) + cube.str_width <= self.width:
+            if sum(v.str_width for v in current_group.values()) + cube.str_width <= self.width:
                 current_group[name] = cube
             else:
                 groups.append(current_group)
@@ -221,10 +221,10 @@ class RGBCubeCollection:
         groups.append(current_group)
 
         for g in groups:
-            for name, c in g.items():
-                print(f'{name:<{c.str_width}s}', end=grid_sep)
+            for name, cube in g.items():
+                print(f'{name:<{cube.str_width}s}', end=grid_sep)
             print()
-            for rows in zip(*[c.faces.iter_s(padding_top, padding_bottom, cell_width) for n, c in g.items()]):
+            for rows in zip(*[cube.faces.iter_s(padding_top, padding_bottom, cell_width) for n, cube in g.items()]):
                 print(grid_sep.join(rows))
 
 def find_face_with_edge(collection: RGBCubeCollection, face_name: str, face: Face, edge_type: str) -> Face:

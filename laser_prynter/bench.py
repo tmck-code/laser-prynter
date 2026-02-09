@@ -25,10 +25,12 @@ bench.bench(
 
 from collections import Counter, namedtuple
 from functools import lru_cache, wraps
-from itertools import chain, repeat
+from itertools import chain
 import operator
 import pickle
-import time, sys, os
+import time
+import sys
+import os
 from typing import Callable, Any
 import statistics
 

@@ -29,7 +29,6 @@ dev = [
   "twine",
 ]
 
-
 [tool.ruff]
 exclude = ["bin/", ".venv/", "test/"]
 line-length = 100
@@ -41,3 +40,8 @@ dummy-variable-rgx = "^_$" # ignore variables named "_".
 
 [tool.ruff.format]
 quote-style = "single"
+
+[tool.mypy]
+disallow_untyped_defs = true # no functions without type annotations
+warn_return_any = true       # warn about functions that return Any
+ignore_missing_imports = true # ignore imports that can't be resolved (e.g., third-party libraries without type stubs)

@@ -36,7 +36,7 @@ class PBar:
         if self.t > self.w:
             self.g = list(interp_xyz(c1, c2, self.t+1))
         else:
-            self.g = list(interp_xyz(c1, c2, self.w))
+            self.g = list(interp_xyz(c1, c2, self.w+1))
 
         self._iter_pbar = iter(self._pbar())
         self._initial_bar()
@@ -58,15 +58,13 @@ class PBar:
         )
 
     def _pbar(self):
-        for i, (r, g, b) in zip(indexes(self.t, self.w), self.g):
-            j = []
-            for _ in range(self.curr, i):
-                j.append((i, (r, g, b)))
-            yield tuple(j)
-
-        if self.curr < self.w:
-            for fill in range(self.curr, self.w):
-                yield ((fill, self.c2),)
+        for x in range(self.curr, self.w):
+            if self.t > self.w:
+                tpos = int((x / self.w) * self.t)
+                color = self.g[tpos]
+            else:
+                color = self.g[x]
+            yield ((x, color),)
 
     def __iter__(self):
         return self
@@ -86,13 +84,5 @@ class PBar:
 
 
 if __name__ == '__main__':
-    import time
-
-    c1, c2 = RGB(255, 0, 0), RGB(0, 255, 0)
-    for i in PBar(200, c1, c2):
+    for i in PBar(100, *PBar.randgrad()):
         time.sleep(0.01)
-    # print('\r' + ' ' * shutil.get_terminal_size().columns + '\r', end='', flush=True)
-
-    # clear the bar
-    # for i in PBar(100, *PBar.randgrad()):
-    #     time.sleep(0.01)

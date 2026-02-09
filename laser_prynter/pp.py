@@ -4,6 +4,7 @@ import json
 import random
 import sys
 from types import FunctionType
+from typing import cast, Any, Iterator, NamedTuple, TextIO
 
 from pygments import highlight, console
 from pygments.lexers import JsonLexer
@@ -19,18 +20,18 @@ DEFAULT_STYLE = 'dracula'
 # disable printing by setting `pp.enabled = False`
 enabled = True
 
-def _output_is_redirected(stream=sys.stdout) -> bool:
+def _output_is_redirected(stream: TextIO = sys.stdout) -> bool:
     'detect if output is being redirected to a file or pipe'
-    return sys.stdout.isatty() is False
+    return stream.isatty() is False
 
-def _print(s: str, **kwargs) -> None:
+def _print(s: str, **kwargs: Any) -> None:
     if enabled:
         print(s, **kwargs)
 
-def _isnamedtuple(obj: object):
+def _isnamedtuple(obj: object) -> bool:
     return isinstance(obj, tuple) and hasattr(obj, '_fields')
 
-def _normalise_keys(d: dict):
+def _normalise_keys(d: dict) -> Iterator[tuple[str, Any]]:
     'norlimalise dict keys for JSON by stringifying'
     for k,v in d.items():
         if not isinstance(k, str):
@@ -38,22 +39,23 @@ def _normalise_keys(d: dict):
         else:
             yield k, _normalise(v)
 
-def _normalise(obj: object):
+def _normalise(obj: object) -> Any:
     'step through obj and normalise namedtuples to dicts'
     if isinstance(obj, dict):
         return dict(_normalise_keys(obj))
     if isinstance(obj, list):
         return [_normalise(i) for i in obj]
     if _isnamedtuple(obj):
-        return obj._asdict()
+        return cast(NamedTuple, obj)._asdict()
     return obj
 
 # ruff: disable[E701]
-def _json_default(obj: object):
+def _json_default(obj: object) -> Any:
     'Default JSON serializer, supports most main class types'
     if   isinstance(obj, str):          return obj # str
     elif isinstance(obj, list):         return [_json_default(i) for i in obj]
-    elif is_dataclass(obj):             return asdict(obj) # dataclass
+    elif is_dataclass(obj) and not isinstance(obj, type):
+        return asdict(obj) # dataclass
     elif isinstance(obj, datetime):     return obj.isoformat() # datetime
     elif isinstance(obj, FunctionType): return f'{obj.__name__}()' # function
     elif hasattr(obj, '__slots__'):     return {k: getattr(obj, k) for k in obj.__slots__} # class with slots.
@@ -61,11 +63,11 @@ def _json_default(obj: object):
     elif hasattr(obj, '__dict__'):      return obj.__dict__ # class
     return str(obj)
 
-def ppd(d_obj, indent=2, style='dracula', random_style: bool=False, **kwargs):
+def ppd(d_obj: dict, indent: int|None=2, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
 
-    if _output_is_redirected(kwargs.get('file', sys.stdout)):
+    if _output_is_redirected(cast(TextIO, kwargs.get('file', sys.stdout))):
         style = None
     elif random_style:
         style = random.choice(STYLES)
@@ -83,11 +85,11 @@ def ppd(d_obj, indent=2, style='dracula', random_style: bool=False, **kwargs):
             **kwargs,
         )
 
-def ppj(j: str, indent: int=None, style: str='dracula', random_style: bool=False, **kwargs) -> None:
+def ppj(j: str, indent: int|None=None, style: str='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a JSON string'
     ppd(_normalise(json.loads(j)), indent=indent, style=style, random_style=random_style)
 
-def ps(s: str, style: str='yellow', random_style: bool=False) -> str:
+def ps(s: str, style: str='yellow', random_style: bool=False) -> str|Any:
     'add color to a string'
     if random_style:
         style = random.choice(console.dark_colors + console.light_colors)
@@ -97,7 +99,7 @@ def pps(s: str, style: str='yellow', random_style: bool=False) -> None:
     'pretty-print a string'
     _print(ps(s, style=style, random_style=random_style))
 
-def demo(**kwargs) -> None:
+def demo(**kwargs: Any) -> None:
     'demonstrate pretty-printing colours'
 
     for s in STYLES:

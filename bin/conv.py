@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from laser_prynter.colour import c, gradient
+from laser_prynter.pp import ppd
 
 for i in range(16, 232):
     cell = c.from_ansi(i)
@@ -16,7 +17,10 @@ coll = gradient.RGBCubeCollection({
 coll.print(padding_top=0, padding_bottom=1, cell_width=15)
 
 for k in ('rgb', 'grb', 'bgr'):
-    print('\n'+'~'*80+'\n'+k)
+    print('\n'+'~'*80)
+    ppd({'z-axis': k[0], 'y-axis': k[1], 'x-axis': k[2]}, indent=None)
+    print()
+
     for rot in range(4):
         f1 = coll.cubes[k].faces.faces[0][0].rot90(rot, flip=True)
         f1.print(padding_top=0, padding_bottom=1, cell_width=15)

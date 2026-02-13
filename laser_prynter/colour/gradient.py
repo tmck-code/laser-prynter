@@ -249,22 +249,22 @@ def create_cube(f1: Face, f1_name: str, cube_collection: RGBCubeCollection) -> N
 
     faces = [
         [Face.empty_face(6), f4, Face.empty_face(6)],
-        [f2,                          f1, Face.empty_face(6)],
+        [f2,                 f1, Face.empty_face(6)],
         [Face.empty_face(6), f3, f5],
         [Face.empty_face(6), f6, Face.empty_face(6)],
     ]
     Faces(faces).print(padding_top=0, padding_bottom=1, cell_width=15)
 
-    c1 = f2[2][3].rgb
-    c2 = f4[2][3].rgb
+    # c1 = f2[2][3].rgb
+    # c2 = f4[2][3].rgb
 
-    print(f'c1: {c1}, c2: {c2}')
+    # print(f'c1: {c1}, c2: {c2}')
 
-    grad = interp_xyz(c1, c2, 10)
-    for r, g, b in grad:
-        print(
-            '\033[48;5;{};{};{}m'.format(
-                int(r), int(g), int(b)
-            ) + f'{str((r, g, b)):^10s}' + '\033[0m'
-        )
+    # grad = interp_xyz(c1, c2, 10)
+    # for r, g, b in grad:
+    #     print(
+    #         '\033[48;5;{};{};{}m'.format(
+    #             int(r), int(g), int(b)
+    #         ) + f'{str((r, g, b)):^10s}' + '\033[0m'
+    #     )
         # print(c.from_rgb(r, g, b).colorise(' '*8))

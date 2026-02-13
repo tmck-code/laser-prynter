@@ -63,7 +63,7 @@ def _json_default(obj: object) -> Any:
     elif hasattr(obj, '__dict__'):      return obj.__dict__ # class
     return str(obj)
 
-def ppd(d_obj: dict, indent: int|None=2, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
+def ppd(d_obj: Any, indent: int|None=2, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
 

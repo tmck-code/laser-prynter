@@ -195,7 +195,8 @@ class RGBCube:
             for r2 in range(6):
                 row = []
                 for r3 in range(6):
-                    row.append(c.from_cube_coords(r=r1, g=r2, b=r3))
+                    coords = {c1: r1, c2: r2, c3: r3}
+                    row.append(c.from_cube_coords(r=coords['r'], g=coords['g'], b=coords['b']))
                 face.append(row)
             faces.append([Face(face)])
         return RGBCube(Faces(faces))
@@ -230,10 +231,13 @@ def find_face_with_edge(collection: RGBCubeCollection, face_name: str, face: Fac
     for n, cube in collection.cubes.items():
         if n == face_name:
             continue
-        f = cube.find_face_with_edge(face, edge_type)
-        if f:
+        try:
+            f = cube.find_face_with_edge(face, edge_type)
             return f, n
-    raise ValueError('No face with matching edge found')
+        except ValueError:
+            continue
+    else:
+        raise ValueError('No face with matching edge found')
 
 
 def create_cube(f1: Face, f1_name: str, cube_collection: RGBCubeCollection) -> None:

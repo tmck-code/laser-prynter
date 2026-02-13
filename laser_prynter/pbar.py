@@ -45,7 +45,7 @@ class PBar:
     def _initial_bar(self) -> None:
         "print initial bar in end color"
         print(
-            f'\x1b[38;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + '▉' * self.w + '\x1b[0m',
+            f'\x1b[48;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + ' ' * self.w + '\x1b[0m',
             end='',
             flush=True,
         )
@@ -73,7 +73,7 @@ class PBar:
 
     def __next__(self) -> None:
         for i, rgb in next(self._iter_pbar):
-            print(f'\x1b[38;2;{int(rgb.r)};{int(rgb.g)};{int(rgb.b)}m▉\x1b[0m', end='', flush=True)
+            print(f'\x1b[48;2;{int(rgb.r)};{int(rgb.g)};{int(rgb.b)}m \x1b[0m', end='', flush=True)
             self.curr = i
         if self.curr >= self.w:
             raise StopIteration

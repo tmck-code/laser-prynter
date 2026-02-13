@@ -1,22 +1,17 @@
-name: ruff
+name: test
 on: [push]
 
 jobs:
-  ruff:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Ruff Check
-        uses: astral-sh/ruff-action@v1
-        with:
-          args: check
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-    - name: uv sync
-      run: uv sync --locked --all-groups
-    - name: unittest
-      run: uv run python3 -m unittest discover -s test
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: uv sync
+        run: uv sync --locked --all-groups
+      - name: ruff check
+        run: uv run ruff check
+      - name: unittest
+        run: uv run python3 -m unittest discover -s test

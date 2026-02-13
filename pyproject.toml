@@ -1,17 +1,15 @@
 [project]
 name = "laser-prynter"
-version = "0.2.8"
-authors = [
-  { name="tmck-code", email="tmck01@gmail.com" },
-]
+version = "0.3.0"
+authors = [{ name = "tmck-code", email = "tmck01@gmail.com" }]
 description = "terminal/cli/python helpers for colour and pretty-printing"
 readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
 ]
 dependencies = [
   "pygments",

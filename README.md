@@ -1,9 +1,10 @@
 # laser-prynter
 terminal/cli/python helpers for colour and pretty-printing
 
-- [laser_prynter](#laser_prynter)
+- [laser-prynter](#laser-prynter)
+  - [`laser_prynter`](#laser_prynter)
+  - [`pbar`](#pbar)
   - [`bench`](#bench)
-  - [`laser_prynter`](#laser_prynter-1)
 
 ---
 
@@ -12,6 +13,20 @@ terminal/cli/python helpers for colour and pretty-printing
 
 https://github.com/user-attachments/assets/cce8f690-e411-459f-a04f-8e9bef533e4a
 
+
+---
+
+## `pbar`
+
+https://github.com/user-attachments/assets/8a2c2d99-1a11-4f9f-ac6a-8153f67e21c3
+
+```python
+from laser_prynter import pbar
+with pbar(100) as bar:
+    for i in range(100):
+        # do something
+        bar.update()
+```
 
 ---
 

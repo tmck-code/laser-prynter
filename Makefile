@@ -1,10 +1,13 @@
-build/pypi:
-	rm -rf build/ dist/ laser_prynter.egg-info/
-	python3 -m build --wheel --sdist
-	python3 -m twine check dist/*
+pypi/build:
+	uv build
 	
+pypi/publish:
+	tree dist/
 	@echo -e "\e[93mPress [Enter] to continue uploading to PyPI...\e[0m"
 	@read 
 	twine upload dist/*
 
-.PHONY: build/pypi
+test:
+	python3 -m unittest discover -s test
+
+.PHONY: pypi/build pypi/publish test

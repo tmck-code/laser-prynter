@@ -6,8 +6,10 @@ fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py' | tr '\n' 
 
 RUFF_STATUS=0
 MYPY_STATUS=0
+TEST_STATUS=0
 
 ruff check $fpaths || RUFF_STATUS=$?
 mypy $fpaths || MYPY_STATUS=$?
+python3 -m unittest discover -s test || TEST_STATUS=$?
 
-[ $RUFF_STATUS -eq 0 ] && [ $MYPY_STATUS -eq 0 ] || exit 1
+[ $RUFF_STATUS -eq 0 ] && [ $MYPY_STATUS -eq 0 ] && [ $TEST_STATUS -eq 0 ] || exit 1

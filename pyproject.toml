@@ -19,7 +19,6 @@ dependencies = [
 dev = [
   "build",
   "mypy",
-  "pytest",
   "ruff",
   "twine",
 ]

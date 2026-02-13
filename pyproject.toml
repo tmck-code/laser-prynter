@@ -13,14 +13,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-
-[project.urls]
-Homepage = "https://github.com/tmck-code/laser-prynter"
-Issues = "https://github.com/tmck-code/laser-prynter/issues"
-
 dependencies = [
   "pygments",
 ]
+
 [dependency-groups]
 dev = [
   "build",
@@ -28,6 +24,10 @@ dev = [
   "ruff",
   "twine",
 ]
+
+[project.urls]
+Homepage = "https://github.com/tmck-code/laser-prynter"
+Issues = "https://github.com/tmck-code/laser-prynter/issues"
 
 [tool.ruff]
 exclude = ["bin/", ".venv/", "test/"]

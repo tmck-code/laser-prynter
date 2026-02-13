@@ -27,12 +27,12 @@ usage examples to log messages:
 '''
 
 from datetime import datetime
-import io
 import json
 import logging
 from logging.handlers import  TimedRotatingFileHandler
 import os
 import sys
+from typing import Any, TextIO
 
 from laser_prynter.pp import _json_default
 
@@ -58,10 +58,12 @@ class LogFormatter(logging.Formatter):
         self.defaults = defaults
         super().__init__()
 
-    def format(self, record) -> str:
+    def format(self, record: logging.LogRecord) -> str:
         'Formats the log message as JSON.'
 
-        args, kwargs = None, {}
+        args: tuple | list | None = None
+        kwargs: Any = {}
+
         if isinstance(record.args, tuple):
             if len(record.args) == 1:
                 args = record.args
@@ -128,12 +130,11 @@ def _getLogger(
 
     return logger
 
-
 def getLogger(
     name:     str,
     level:    int                 = -1,
-    stream:   io.TextIOBase       = sys.stdout,
-    files:    dict[LogLevel, str] = {},
+    stream:   TextIO       = sys.stdout,
+    files:    dict[int, str] = {},
     context:  dict                = {},
 ) -> logging.Logger:
     '''
@@ -155,17 +156,17 @@ def getLogger(
         else:
             level = DEFAULT_LOG_LEVEL
 
-    handlers = []
+    handlers: list[logging.Handler] = []
     if stream:
         handler = logging.StreamHandler(stream)
         handler.setLevel(level)
         handlers.append(handler)
 
     for flevel, filename in files.items():
-        handler = TimedRotatingFileHandler(
+        fhandler = TimedRotatingFileHandler(
             filename, when='midnight', backupCount=7, encoding='utf-8',
         )
-        handler.setLevel(flevel)
-        handlers.append(handler)
+        fhandler.setLevel(flevel)
+        handlers.append(fhandler)
 
     return _getLogger(name, level, handlers, context=context)

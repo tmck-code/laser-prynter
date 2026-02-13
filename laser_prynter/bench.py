@@ -25,10 +25,12 @@ bench.bench(
 
 from collections import Counter, namedtuple
 from functools import lru_cache, wraps
-from itertools import chain, repeat
+from itertools import chain
 import operator
 import pickle
-import time, sys, os
+import time
+import sys
+import os
 from typing import Callable, Any
 import statistics
 
@@ -38,7 +40,7 @@ Test = namedtuple('Test', 'args kwargs expected n')
 class NoExpectation:
     'Denotes that a test/benchmark has no expected result (i.e. just benchmark it)'
 
-def set_function_module(func):
+def set_function_module(func: Callable) -> None:
     'Set the module of a function'
     if func.__module__ != '__main__':
         return
@@ -51,16 +53,17 @@ def set_function_module(func):
         func.__module__ = os.path.basename(os.getcwd())
 
 @lru_cache
-def _load_serialised_args(serialised_args):
+def _load_serialised_args(serialised_args: bytes) -> Any:
     return pickle.loads(serialised_args)
 
-def timeit_func(func, args, kwargs, expected: object = NoExpectation, n: int = 10_000):
+def timeit_func(func: Callable, args: tuple, kwargs: dict, expected: object = NoExpectation, n: int = 10_000) -> tuple:
     'Time a function with arguments and return the result, whether it is correct, and the times'
 
     if os.environ.get('DEBUG'):
         pp.ppd({'func': func, 'args': args, 'kwargs': kwargs, 'expected': expected, 'n': n})
 
-    start, times = 0, Counter()
+    start = 0.0
+    times: Counter[float] = Counter()
     # some functions may modify the input arguments, so a new copy is needed for every test
     # "pickle" is used instead of "deepcopy" as it's much faster
     args_ser = pickle.dumps(args)
@@ -80,14 +83,14 @@ def timeit_func(func, args, kwargs, expected: object = NoExpectation, n: int = 1
         result = e
     return result, expected is NoExpectation or result == expected, times
 
-def _sum_times(times: Counter) -> float:
+def _sum_times(times: Counter[float]) -> float:
     'sum the values*counts in a Counter'
-    return sum(map(operator.mul, *zip(*times.items())))
+    return float(sum(map(operator.mul, *zip(*times.items()))))
 
-def _avg_times(times: Counter) -> float:
+def _avg_times(times: Counter[float]) -> float:
     return _sum_times(times) / times.total()
 
-def _median_times(times: Counter) -> float:
+def _median_times(times: Counter[float]) -> float:
     return statistics.median(list(times.elements()))
 
 TEST_STATUS = {
@@ -121,7 +124,7 @@ BORDER_SEP = '─'
 HEADER_SEP = '┆'
 BORDER_END, BORDER_PATTERN = '★', '-⎽__⎽-⎻⎺⎺⎻'
 
-def gen_border():
+def gen_border() -> str:
     w = os.get_terminal_size().columns
     n = int(w/len(BORDER_PATTERN))
     r = max(int(n%len(BORDER_PATTERN)/2)-1, 0)
@@ -154,7 +157,7 @@ def _print_result_header(width: int=1) -> None:
     border = BORDER_SEP*len(msg)
     print(msg, border, sep='\n')
 
-def _print_result(func: Callable, result: Any, correct: bool, times: Counter, width: int=1, colour: str='', extra: str='') -> None:
+def _print_result(func: Callable, result: Any, correct: bool, times: Counter, width: int=1, colour: str='', extra: Any='') -> None:
     fail_sep, status_msg = '\n', ''
     if not correct:
         if os.get_terminal_size().columns >= 100:
@@ -175,18 +178,18 @@ def _print_result(func: Callable, result: Any, correct: bool, times: Counter, wi
     print(msg)
 
 
-def timeit(n=10_000):
+def timeit(n: int=10_000) -> Callable[[Callable], Callable]:
     'Decorator to time a function'
-    def decorator_with_args(func):
+    def decorator_with_args(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: tuple, **kwargs: dict) -> None:
             result, correct, times = timeit_func(func, args, kwargs, NoExpectation, n)
             _print_result(func, result, correct, times)
         return wrapper
     return decorator_with_args
 
 
-def bench(tests, func_groups, n: int=10_000, sort: bool=False):
+def bench(tests: list, func_groups: list, n: int=10_000, sort: bool=False) -> None:
     'Run a series of timed tests on a list of functions'
     s, group_colours = '', ['yellow', 'brightred', 'cyan', 'bold']
 
@@ -200,28 +203,30 @@ def bench(tests, func_groups, n: int=10_000, sort: bool=False):
     if 'BENCH_SORT' in os.environ:
         sort = True
 
-    for test in tests:
-        test, results = Test(*test, n=n), []
+    for test_data in tests:
+        test = Test(test_data[0], test_data[1], test_data[2], n=n)
+        results = []
         _print_header(s, test)
         pp.pps('results:', 'bold')
         _print_result_header(width)
         for funcs, group_colour in zip(func_groups, group_colours):
             for func in funcs:
-                result, correct, times = timeit_func(func, *test)
+                result, correct, times = timeit_func(func, test.args, test.kwargs, test.expected)
                 _print_result(func, result, correct, times, width, group_colour)
                 results.append((func, result, correct, times, width, group_colour))
         if sort:
             pp.pps('\nsorted by time:', 'bold')
             _print_result_header(width)
-            base, extra = 0, ''
+            base = 0.0
+            extra = ''
 
-            for _, results in enumerate(sorted(results, key=lambda r: _median_times(r[3]))):
-                if not results[2]:
+            for _, result_tuple in enumerate(sorted(results, key=lambda r: _median_times(r[3]))): 
+                if not result_tuple[2]:
                     continue
                 if base == 0:
-                    base = _median_times(results[3])
+                    base = _median_times(result_tuple[3])
                 else:
-                    x = _median_times(results[3]) / base
+                    x = _median_times(result_tuple[3]) / base
                     extra = pp.ps(f' ↓ x{x:.2f}', 'bold')
-                _print_result(*results, extra=extra)
+                _print_result(result_tuple[0], result_tuple[1], result_tuple[2], result_tuple[3], result_tuple[4], result_tuple[5], extra=extra)
         s = '\n'

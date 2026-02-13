@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+
+fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py' | tr '\n' ' ') || exit 0
+
+RUFF_STATUS=0
+MYPY_STATUS=0
+
+ruff check $fpaths || RUFF_STATUS=$?
+mypy $fpaths || MYPY_STATUS=$?
+
+[ $RUFF_STATUS -eq 0 ] && [ $MYPY_STATUS -eq 0 ] || exit 1

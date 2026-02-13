@@ -22,7 +22,7 @@ class Face:
     rotations: List[Face] = field(default_factory=list)
     flipped_rotations: List[Face] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.with_rotations:
             self.rotations = [Face._rot90(
                 self.rows, n, flip=False) for n in range(4)]
@@ -35,7 +35,7 @@ class Face:
         if flip:
             rows = list(reversed(rows))
         for _ in range(n):
-            rows = list(zip(*rows[::-1]))
+            rows = list(map(list, zip(*rows[::-1])))
         return Face(rows, with_rotations=False)
 
     def rot90(self, n: int = 1, flip: bool = False) -> Face:
@@ -61,11 +61,10 @@ class Face:
         for row in self.__iter__():
             p = [cell.colorise(' '*cell_width) for cell in row]
             # r = [cell.colorise(f'{cell.ansi_n:^{cell_width}}') for cell in row]
-            r = [cell.colorise(f'{str(cell.rgb):^{cell_width}}')
-                 for cell in row]
+            r = [cell.colorise(f'{str(cell.rgb):^{cell_width}}') for cell in row]
 
-            for row in chain(repeat(p, padding_top), [r], repeat(p, padding_bottom)):
-                yield ''.join(row)
+            for r in chain(repeat(p, padding_top), [r], repeat(p, padding_bottom)):
+                yield ''.join(r)
 
     def print(self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> None:
         'Print the face, with optional cell padding top/bottom to make it more "square"'
@@ -93,10 +92,10 @@ class Faces:
     def __next__(self) -> Face:
         return next(self.__iter__())
 
-    def iter_rows(self) -> Iterable[Row]:
+    def iter_rows(self) -> Iterator[Row]:
         for face_row in self.faces:
             for row in zip(*face_row):
-                yield row
+                yield list(row)
 
     def iter_s(self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> Iterable[str]:
         for face_row in self.faces:
@@ -116,7 +115,7 @@ class Faces:
 
 
 def distance(c1: tuple[int, int, int], c2: tuple[int, int, int]) -> float:
-    return abs(sum(starmap(operator.sub, zip(c2, c1))))
+    return float(abs(sum(starmap(operator.sub, zip(c2, c1)))))
 
 # In[69]: c1, c2 = (95, 135, 0), (0, 135, 255)
 # r = interp_xyz(c1, c2, 20)
@@ -138,7 +137,7 @@ def interp(v0: float, v1: float, n_t: int) -> list[float]:
     return list(map(i, ts))
 
 
-def interp_xyz(c1: tuple[int, int, int], c2: tuple[int, int, int], n_t: int) -> list[float]:
+def interp_xyz(c1: tuple[int, int, int], c2: tuple[int, int, int], n_t: int) -> list[tuple[float, ...]]:
     return list(zip(*starmap(interp, zip(c1, c2, repeat(n_t)))))
 
 
@@ -179,6 +178,7 @@ class RGBCube:
                         return face.rot90(rot, flip=flip)
                     elif edge_type == 'rhs' and RGBCube.compare_rows([r[0] for r in face.rot90(rot, flip=flip)], edge):
                         return face.rot90(rot, flip=flip)
+        raise ValueError('No face with matching edge found')
 
     @staticmethod
     def from_ranges(c1: Literal[c._RGB_COMPONENT], c2: c._RGB_COMPONENT, c3: c._RGB_COMPONENT) -> RGBCube:
@@ -195,9 +195,7 @@ class RGBCube:
             for r2 in range(6):
                 row = []
                 for r3 in range(6):
-                    row.append(
-                        c.from_cube_coords(**{c1: r1, c2: r2, c3: r3})
-                    )
+                    row.append(c.from_cube_coords(r=r1, g=r2, b=r3))
                 face.append(row)
             faces.append([Face(face)])
         return RGBCube(Faces(faces))
@@ -207,13 +205,14 @@ class RGBCube:
 class RGBCubeCollection:
     cubes: Dict[str, RGBCube]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.width = os.get_terminal_size().columns
 
     def print(self, grid_sep: str = ' '*2, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> None:
-        groups, current_group, current_width = [], {}, 0
+        groups: List[Dict[str, RGBCube]] = []
+        current_group: Dict[str, RGBCube] = {}
         for name, cube in self.cubes.items():
-            if sum(c.str_width for c in current_group.values()) + cube.str_width <= self.width:
+            if sum(v.str_width for v in current_group.values()) + cube.str_width <= self.width:
                 current_group[name] = cube
             else:
                 groups.append(current_group)
@@ -221,22 +220,23 @@ class RGBCubeCollection:
         groups.append(current_group)
 
         for g in groups:
-            for name, c in g.items():
-                print(f'{name:<{c.str_width}s}', end=grid_sep)
+            for name, cube in g.items():
+                print(f'{name:<{cube.str_width}s}', end=grid_sep)
             print()
-            for rows in zip(*[c.faces.iter_s(padding_top, padding_bottom, cell_width) for n, c in g.items()]):
+            for rows in zip(*[cube.faces.iter_s(padding_top, padding_bottom, cell_width) for n, cube in g.items()]):
                 print(grid_sep.join(rows))
 
-def find_face_with_edge(collection: RGBCubeCollection, face_name: str, face: Face, edge_type: str) -> Face:
+def find_face_with_edge(collection: RGBCubeCollection, face_name: str, face: Face, edge_type: str) -> tuple[Face, str]:
     for n, cube in collection.cubes.items():
         if n == face_name:
             continue
         f = cube.find_face_with_edge(face, edge_type)
         if f:
             return f, n
+    raise ValueError('No face with matching edge found')
 
 
-def create_cube(f1, f1_name, cube_collection):
+def create_cube(f1: Face, f1_name: str, cube_collection: RGBCubeCollection) -> None:
     f2, f2_name = find_face_with_edge(cube_collection, f1_name, f1, 'lhs')
     f3, f3_name = find_face_with_edge(cube_collection, f1_name, f1, 'bs')
     f4, f4_name = find_face_with_edge(cube_collection, f1_name, f1, 'ts')
@@ -256,8 +256,8 @@ def create_cube(f1, f1_name, cube_collection):
 
     print(f'c1: {c1}, c2: {c2}')
 
-    g = interp_xyz(c1, c2, 10)
-    for r, g, b in g:
+    grad = interp_xyz(c1, c2, 10)
+    for r, g, b in grad:
         print(
             '\033[48;5;{};{};{}m'.format(
                 int(r), int(g), int(b)

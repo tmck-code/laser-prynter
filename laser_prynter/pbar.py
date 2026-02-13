@@ -4,12 +4,12 @@ from __future__ import annotations
 from random import randint
 import shutil
 import time
-from typing import NamedTuple
+from typing import Iterator, NamedTuple
 
 from laser_prynter.colour.gradient import interp_xyz
 
 
-def indexes(t: int, w: int):
+def indexes(t: int, w: int) -> Iterator[int]:
     if t > w:
         for i in range(t + 1):
             yield int(i * (w / t))
@@ -42,7 +42,7 @@ class PBar:
         self._iter_pbar = iter(self._pbar())
         # self._initial_bar()
 
-    def _initial_bar(self):
+    def _initial_bar(self) -> None:
         "print initial bar in end color"
         print(
             f'\x1b[38;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + '▉' * self.w + '\x1b[0m',
@@ -52,32 +52,33 @@ class PBar:
         print('\r', end='', flush=True)
 
     @staticmethod
-    def randgrad():
+    def randgrad() -> tuple[RGB, RGB]:
         return (
             RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
             RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
         )
 
-    def _pbar(self):
+    def _pbar(self) -> Iterator[tuple[tuple[int, RGB]]]:
         for x in range(self.curr, self.w):
             if self.t > self.w:
                 tpos = int((x / self.w) * self.t)
                 color = self.g[tpos]
             else:
                 color = self.g[x]
-            yield ((x, color),)
 
-    def __iter__(self):
+            yield ((x, RGB(*map(int, color))),)
+
+    def __iter__(self) -> PBar:
         return self
 
-    def __next__(self):
-        for i, (r, g, b) in next(self._iter_pbar):
-            print(f'\x1b[38;2;{int(r)};{int(g)};{int(b)}m▉\x1b[0m', end='', flush=True)
+    def __next__(self) -> None:
+        for i, rgb in next(self._iter_pbar):
+            print(f'\x1b[38;2;{int(rgb.r)};{int(rgb.g)};{int(rgb.b)}m▉\x1b[0m', end='', flush=True)
             self.curr = i
         if self.curr >= self.w:
             raise StopIteration
 
-    def update(self, n: int):
+    def update(self, n: int) -> None:
         "update the progress bar by n steps"
         self.progress = min(self.progress + n, self.t)
         # Calculate target terminal position based on logical progress
@@ -89,17 +90,14 @@ class PBar:
             except StopIteration:
                 break
 
-    def __enter__(self):
+    def __enter__(self) -> PBar:
         return self
 
-    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+    def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
         self.curr = self.t
 
 
 if __name__ == '__main__':
-    # for i in PBar(100, *PBar.randgrad()):
-    #     time.sleep(0.01)
-
     with PBar(100) as pbar:
         for i in range(100):
             time.sleep(0.01)

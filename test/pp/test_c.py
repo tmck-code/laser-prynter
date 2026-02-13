@@ -1,7 +1,7 @@
 from laser_prynter.colour import c
 
 class TestC:
-    def test_ansi_to_rgb(self):
+    def test_ansi_to_rgb(self) -> None:
         expected = {
             16: (0,0,0), 17: (0,0,95), 18: (0,0,135), 19: (0,0,175), 20: (0,0,215), 21: (0,0,255), 22: (0,95,0),
             23: (0,95,95), 24: (0,95,135), 25: (0,95,175), 26: (0,95,215), 27: (0,95,255), 28: (0,135,0),

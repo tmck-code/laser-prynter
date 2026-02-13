@@ -33,13 +33,14 @@ class PBar:
         self.w = shutil.get_terminal_size().columns
         self.c1, self.c2 = c1, c2
         self.curr = 0
+        self.progress = 0 # Track logical progress out of total
         if self.t > self.w:
             self.g = list(interp_xyz(c1, c2, self.t+1))
         else:
             self.g = list(interp_xyz(c1, c2, self.w+1))
 
         self._iter_pbar = iter(self._pbar())
-        self._initial_bar()
+        # self._initial_bar()
 
     def _initial_bar(self):
         "print initial bar in end color"
@@ -76,6 +77,18 @@ class PBar:
         if self.curr >= self.w:
             raise StopIteration
 
+    def update(self, n: int):
+        "update the progress bar by n steps"
+        self.progress = min(self.progress + n, self.t)
+        # Calculate target terminal position based on logical progress
+        target_pos = int((self.progress / self.t) * self.w)
+        # Update bar to target position
+        while self.curr < target_pos:
+            try:
+                next(self)
+            except StopIteration:
+                break
+
     def __enter__(self):
         return self
 
@@ -84,5 +97,10 @@ class PBar:
 
 
 if __name__ == '__main__':
-    for i in PBar(100, *PBar.randgrad()):
-        time.sleep(0.01)
+    # for i in PBar(100, *PBar.randgrad()):
+    #     time.sleep(0.01)
+
+    with PBar(100) as pbar:
+        for i in range(100):
+            time.sleep(0.01)
+            pbar.update(1)

@@ -1,6 +1,8 @@
+import unittest
+
 from laser_prynter.colour import c
 
-class TestC:
+class TestC(unittest.TestCase):
     def test_ansi_to_rgb(self) -> None:
         expected = {
             16: (0,0,0), 17: (0,0,95), 18: (0,0,135), 19: (0,0,175), 20: (0,0,215), 21: (0,0,255), 22: (0,95,0),
@@ -29,4 +31,4 @@ class TestC:
         for n in range(16, 132):
             results[n] = c.ansi_to_rgb(n)
 
-        assert results == expected
+        self.assertEqual(results, expected)

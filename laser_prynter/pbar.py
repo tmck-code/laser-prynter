@@ -49,16 +49,6 @@ class PBar:
             self.g = list(interp_xyz(c1, c2, self.w + 1))
 
         self._iter_pbar = iter(self._pbar())
-        # self._initial_bar()
-
-    def _initial_bar(self) -> None:
-        "print initial bar in end color"
-        print(
-            f'\x1b[48;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + ' ' * self.w + '\x1b[0m',
-            end='',
-            flush=True,
-        )
-        print('\r', end='', flush=True)
 
     @staticmethod
     def randgrad() -> tuple[RGB, RGB]:
@@ -84,15 +74,25 @@ class PBar:
     def _true_colour(rgb: RGB) -> str:
         return f'\x1b[48;2;{rgb.r};{rgb.g};{rgb.b}m'
 
-    def __next__(self) -> None:
-        s = [f'{self._true_colour(rgb)} ' for _, rgb in next(self._iter_pbar)]
+    def _print_bar_chars(self, s: str) -> None:
         _print_to_terminal(
             '\x1b7'  # save cursor position
             f'\x1b[{self.h};{self.curr}H'  # move to bottom line
-            f'{"".join(s)}'  # the "bar" characters
+            f'{s}'  # the "bar" characters
             '\x1b[0m'  # reset color
             '\x1b8'  # restore cursor position
         )
+
+    def _initial_bar(self) -> None:
+        "print initial bar in end color"
+        self._print_bar_chars(
+            f'\x1b[48;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + ' ' * self.w + '\x1b[0m'
+        )
+
+    def __next__(self) -> None:
+        s = [f'{self._true_colour(rgb)} ' for _, rgb in next(self._iter_pbar)]
+        self._print_bar_chars(''.join(s))
+
         self.curr += len(s)
         if self.curr > self.w:
             raise StopIteration
@@ -117,6 +117,7 @@ class PBar:
             '\x1b8'  # restore cursor position
             '\x1b[1A'  # move cursor up
         )
+        self._initial_bar()
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:

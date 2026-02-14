@@ -68,7 +68,7 @@ class PBar:
         )
 
     def _pbar(self) -> Iterator[tuple[tuple[int, RGB]]]:
-        for x in range(self.curr, self.w):
+        for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?
             if self.t > self.w:
                 tpos = int((x / self.w) * self.t)
                 color = self.g[tpos]
@@ -113,15 +113,21 @@ class PBar:
         _print_to_terminal(
             '\n'  # ensure space for scrollbar
             '\x1b7'  # save cursor position
-            f'\x1b[0;{self.h - 1}r'  # set scrollable region (margin
+            f'\x1b[0;{self.h - 1}r'  # set top & bottom regions (margins)
             '\x1b8'  # restore cursor position
             '\x1b[1A'  # move cursor up
         )
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
+        # TODO: this is to ensure that the bar draws the full width. it should have done this already?
+        while True:
+            try:
+                next(self)
+            except StopIteration:
+                break
         _print_to_terminal(
-            f'\x1b[0;{self.h}r'  # reset scrollable region
+            f'\x1b[0;{self.h}r'  # reset margins
             f'\x1b[{self.h};0H'  # move to bottom line
             '\n'
         )
@@ -129,7 +135,7 @@ class PBar:
 
 
 if __name__ == '__main__':
-    with PBar(100) as pbar:
+    with PBar(100, *PBar.randgrad()) as pbar:
         for i in range(100):
             time.sleep(0.01)
             print(f'-> {i}')

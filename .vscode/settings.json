@@ -16,4 +16,8 @@
     "ruff.configuration": "${workspaceFolder}/pyproject.toml",
     // prefer/use the ruff rules in pyproject.toml
     "ruff.configurationPreference": "filesystemFirst",
+    // enable mypy to actually run
+    "mypy-type-checker.path": ["${workspaceFolder}/.venv/bin/mypy"],
+    // prefer using mypy from the repo venv
+    "mypy-type-checker.importStrategy": "fromEnvironment",
 }

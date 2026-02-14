@@ -20,4 +20,10 @@
     "mypy-type-checker.path": ["${workspaceFolder}/.venv/bin/mypy"],
     // prefer using mypy from the repo venv
     "mypy-type-checker.importStrategy": "fromEnvironment",
+    // configure testing with unittest
+    "python.testing.unittestArgs": [
+        "-v", "-s", "./test", "-p", "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
 }

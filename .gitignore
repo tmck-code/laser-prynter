@@ -3,4 +3,3 @@ __pycache__/
 build/
 dist/
 laser_prynter.egg-info/
-.vscode/

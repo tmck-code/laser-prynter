@@ -156,6 +156,7 @@ class PBar:
     def __enter__(self) -> PBar:
         self.start_time = time.time()
         _print_to_terminal(
+            '\x1b[?25l'  # hide cursor
             '\n\n'  # ensure space for info line and scrollbar
             '\x1b7'  # save cursor position
             f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
@@ -174,6 +175,7 @@ class PBar:
             except StopIteration:
                 break
         _print_to_terminal(
+            '\x1b[?25h'  # show cursor
             f'\x1b[0;{self.h}r'  # reset margins
             f'\x1b[{self.h};0H'  # move to bottom line
             '\n'

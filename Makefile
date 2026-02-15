@@ -1,5 +1,5 @@
 pypi/clean:
-	rm -rf build/ dist/ *.egg-info
+	rm -rfv build/ dist/ *.egg-info
 
 pypi/build: pypi/clean
 	uv build

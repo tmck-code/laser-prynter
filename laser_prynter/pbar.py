@@ -43,6 +43,7 @@ class PBar:
         self.c1, self.c2 = c1, c2
         self.curr = 0
         self.progress = 0  # Track logical progress out of total
+        self.start_time = time.time()
         if self.t > self.w:
             self.g = list(interp_xyz(c1, c2, self.t + 1))
         else:
@@ -52,10 +53,11 @@ class PBar:
 
     @staticmethod
     def randgrad() -> tuple[RGB, RGB]:
-        return (
-            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
-            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
+        rgb1 = RGB(randint(0, 255), randint(0, 255), randint(0, 255))
+        rgb2 = RGB(
+            (rgb1.r + (255 // 2)) % 255, (rgb1.g + (255 // 2)) % 255, (rgb1.b + (255 // 2)) % 255
         )
+        return (rgb1, rgb2)
 
     def _pbar(self) -> Iterator[tuple[tuple[int, RGB]]]:
         for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?
@@ -74,17 +76,56 @@ class PBar:
     def _true_colour(rgb: RGB) -> str:
         return f'\x1b[48;2;{rgb.r};{rgb.g};{rgb.b}m'
 
+    @staticmethod
+    def _format_time(seconds: float) -> str:
+        'Format seconds into human-readable time string.'
+
+        if seconds < 60:
+            isec, fsec = divmod(seconds, 1)
+            return f'{int(isec)}.{int(fsec * 100):02d}'
+        elif seconds < 3600:
+            isec, fsec = divmod(seconds, 60)
+            return f'{int(isec)}:{fsec:05.2f}'
+        else:
+            hours, rem = divmod(seconds, 3600)
+            mins, secs = divmod(rem, 60)
+            return f'{int(hours)}:{int(mins)}:{secs:05.2f}'
+
+    def _print_info(self) -> None:
+        'Print progress info in the line above the bar.'
+
+        elapsed = time.time() - self.start_time
+
+        if self.progress == 0:
+            eta_str = '??:??'
+        else:
+            eta_str = self._format_time((elapsed / self.progress) * (self.t - self.progress))
+
+        pct = (self.progress / self.t) * 100
+        item_info = f'[\x1b[1;32m{self.progress}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
+        time_info = f'\x1b[92m+{self._format_time(elapsed)}\x1b[0m \x1b[93m-{eta_str}\x1b[0m'
+
+        # Clear the line and print info above the progress bar
+        _print_to_terminal(
+            '\x1b7'  # save cursor position
+            f'\x1b[{self.h - 1};0H'  # move to line above bar
+            '\x1b[2K'  # clear entire line
+            f'{item_info} | {time_info}'
+            '\x1b8'  # restore cursor position
+        )
+
     def _print_bar_chars(self, s: str) -> None:
         _print_to_terminal(
             '\x1b7'  # save cursor position
             f'\x1b[{self.h};{self.curr}H'  # move to bottom line
-            f'{s}'  # the "bar" characters
+            f'{s}'  # the 'bar' characters
             '\x1b[0m'  # reset color
             '\x1b8'  # restore cursor position
         )
 
     def _initial_bar(self) -> None:
-        "print initial bar in end color"
+        'print initial bar in end color'
+
         self._print_bar_chars(
             f'\x1b[48;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + ' ' * self.w + '\x1b[0m'
         )
@@ -98,7 +139,8 @@ class PBar:
             raise StopIteration
 
     def update(self, n: int) -> None:
-        "update the progress bar by n steps"
+        'update the progress bar by n steps'
+
         self.progress = min(self.progress + n, self.t)
         # Calculate target terminal position based on logical progress
         target_pos = int((self.progress / (self.t)) * self.w)
@@ -108,16 +150,21 @@ class PBar:
                 next(self)
             except StopIteration:
                 break
+        # Update progress info
+        self._print_info()
 
     def __enter__(self) -> PBar:
+        self.start_time = time.time()
         _print_to_terminal(
-            '\n'  # ensure space for scrollbar
+            '\x1b[?25l'  # hide cursor
+            '\n\n'  # ensure space for info line and scrollbar
             '\x1b7'  # save cursor position
-            f'\x1b[0;{self.h - 1}r'  # set top & bottom regions (margins)
+            f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
             '\x1b8'  # restore cursor position
-            '\x1b[1A'  # move cursor up
+            '\x1b[2A'  # move cursor up 2 lines
         )
         self._initial_bar()
+        self._print_info()
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
@@ -128,6 +175,7 @@ class PBar:
             except StopIteration:
                 break
         _print_to_terminal(
+            '\x1b[?25h'  # show cursor
             f'\x1b[0;{self.h}r'  # reset margins
             f'\x1b[{self.h};0H'  # move to bottom line
             '\n'
@@ -136,8 +184,8 @@ class PBar:
 
 
 if __name__ == '__main__':
-    with PBar(100, *PBar.randgrad()) as pbar:
-        for i in range(100):
-            time.sleep(0.01)
+    with PBar(200, *PBar.randgrad()) as pbar:
+        for i in range(200):
+            time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
             print(f'-> {i}')
             pbar.update(1)

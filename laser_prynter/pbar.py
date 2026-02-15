@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 import sys
 import time
-from random import randint, uniform
+from random import randint
 from typing import Iterator, NamedTuple
 
 from laser_prynter.colour.gradient import interp_xyz
@@ -184,8 +184,8 @@ class PBar:
 
 
 if __name__ == '__main__':
-    with PBar(500, *PBar.randgrad()) as pbar:
-        for i in range(500):
-            time.sleep(uniform(0.01, 0.1))
+    with PBar(200, *PBar.randgrad()) as pbar:
+        for i in range(200):
+            time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
             print(f'-> {i}')
             pbar.update(1)

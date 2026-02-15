@@ -90,15 +90,6 @@ class PBar:
             mins, secs = divmod(rem, 60)
             return f'{int(hours)}:{int(mins)}:{secs:05.2f}'
 
-    def _print_bar_chars(self, s: str) -> None:
-        _print_to_terminal(
-            '\x1b7'  # save cursor position
-            f'\x1b[{self.h};{self.curr}H'  # move to bottom line
-            f'{s}'  # the 'bar' characters
-            '\x1b[0m'  # reset color
-            '\x1b8'  # restore cursor position
-        )
-
     def _print_info(self) -> None:
         'Print progress info in the line above the bar.'
 
@@ -120,6 +111,15 @@ class PBar:
             f'\x1b[{self.h - 1};0H'  # move to line above bar
             '\x1b[2K'  # clear entire line
             f'{info}'
+            '\x1b8'  # restore cursor position
+        )
+
+    def _print_bar_chars(self, s: str) -> None:
+        _print_to_terminal(
+            '\x1b7'  # save cursor position
+            f'\x1b[{self.h};{self.curr}H'  # move to bottom line
+            f'{s}'  # the 'bar' characters
+            '\x1b[0m'  # reset color
             '\x1b8'  # restore cursor position
         )
 

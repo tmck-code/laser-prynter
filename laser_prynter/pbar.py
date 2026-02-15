@@ -99,19 +99,18 @@ class PBar:
         if self.progress == 0:
             eta_str = '??:??'
         else:
-            rate = elapsed / self.progress
-            remaining = rate * (self.t - self.progress)
-            eta_str = self._format_time(remaining)
+            eta_str = self._format_time((elapsed / self.progress) * (self.t - self.progress))
 
-        percentage = (self.progress / self.t) * 100
-        info = f'[{self.progress}/{self.t}] {percentage:5.1f}% | +{self._format_time(elapsed)} -{eta_str}'
+        pct = (self.progress / self.t) * 100
+        item_info = f'[\x1b[1;32m{self.progress}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
+        time_info = f'\x1b[92m+{self._format_time(elapsed)}\x1b[0m \x1b[93m-{eta_str}\x1b[0m'
 
         # Clear the line and print info above the progress bar
         _print_to_terminal(
             '\x1b7'  # save cursor position
             f'\x1b[{self.h - 1};0H'  # move to line above bar
             '\x1b[2K'  # clear entire line
-            f'{info}'
+            f'{item_info} | {time_info}'
             '\x1b8'  # restore cursor position
         )
 

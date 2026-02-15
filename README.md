@@ -1,4 +1,8 @@
 # laser-prynter
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmck-code/laser-prynter/ruff.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/laser-prynter)
+
 terminal/cli/python helpers for colour and pretty-printing
 
 - [laser-prynter](#laser-prynter)

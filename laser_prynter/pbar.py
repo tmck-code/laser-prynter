@@ -53,10 +53,11 @@ class PBar:
 
     @staticmethod
     def randgrad() -> tuple[RGB, RGB]:
-        return (
-            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
-            RGB(randint(0, 255), randint(0, 255), randint(0, 255)),
+        rgb1 = RGB(randint(0, 255), randint(0, 255), randint(0, 255))
+        rgb2 = RGB(
+            (rgb1.r + (255 // 2)) % 255, (rgb1.g + (255 // 2)) % 255, (rgb1.b + (255 // 2)) % 255
         )
+        return (rgb1, rgb2)
 
     def _pbar(self) -> Iterator[tuple[tuple[int, RGB]]]:
         for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?

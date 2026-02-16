@@ -60,19 +60,54 @@ class PBar:
         self.start_time = time.time()
 
         if self.t > self.w:
-            self.g = list(interp_xyz(c1, c2, self.t + 1))
+            self.g = list(interp_xyz(self.c1, self.c2, self.t + 1))
         else:
-            self.g = list(interp_xyz(c1, c2, self.w + 1))
+            self.g = list(interp_xyz(self.c1, self.c2, self.w + 1))
 
         self._iter_pbar = iter(self._pbar())
 
         self.is_exiting = False
         signal.signal(signal.SIGINT, self.sigint_handler)
+        signal.signal(signal.SIGWINCH, self.sigwinch_handler)
 
     def sigint_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
         self.is_exiting = True
         self._reset_terminal()
         sys.exit(0)
+
+    def sigwinch_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
+        self.w, self.h = _get_terminal_size()
+        _print_to_terminal(
+            '\x1b7'  # save cursor position
+            f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
+            f'\x1b[{self.h};1000H'  # move to bottom line
+            '\r'
+            '\x1b[2K'  # clear entire line
+            f'\x1b[{self.h - 1};1000H'  # move to bottom line
+            '\r'
+            '\x1b[2K'  # clear entire line
+            '\x1b8'  # restore cursor position
+            '\x1b[2A'  # move cursor up 2 lines
+        )
+
+        curr, progress = self.curr, self.progress
+        self.curr, self.progress = 0, 0
+        if self.t > self.w:
+            self.g = list(interp_xyz(self.c1, self.c2, self.t + 1))
+        else:
+            self.g = list(interp_xyz(self.c1, self.c2, self.w + 1))
+
+        self._iter_pbar = iter(self._pbar())
+
+        self._initial_bar()
+        self.progress = progress
+        for _ in range(curr):
+            try:
+                next(self)
+            except StopIteration:
+                break
+
+        self._print_info()
 
     @staticmethod
     def randgrad() -> tuple[RGB, RGB]:

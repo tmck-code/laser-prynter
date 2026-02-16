@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import shutil
+import os
+import signal
 import sys
 import time
+import types
 from random import randint
 from typing import Iterator, NamedTuple
 
@@ -22,8 +24,20 @@ def indexes(t: int, w: int) -> Iterator[int]:
 
 def _print_to_terminal(s: str) -> None:
     'Helper function to perform ANSI escape sequences.'
-    sys.stdout.write(s)
-    sys.stdout.flush()
+    sys.stderr.write(s)
+    sys.stderr.flush()
+
+
+def _get_terminal_size() -> tuple[int, int]:
+    'Get terminal size (width, height)'
+    try:
+        size = os.get_terminal_size(1)
+    except OSError:
+        try:
+            size = os.get_terminal_size(2)
+        except OSError:
+            return (80, 24)
+    return (size.columns, size.lines)
 
 
 class RGB(NamedTuple):
@@ -37,19 +51,28 @@ DEFAULT_C1, DEFAULT_C2 = RGB(240, 50, 0), RGB(10, 220, 0)
 
 class PBar:
     def __init__(self, total: int, c1: RGB = DEFAULT_C1, c2: RGB = DEFAULT_C2):
-        self.t = total
-        self.w = shutil.get_terminal_size().columns
-        self.h = shutil.get_terminal_size().lines
+        self.w, self.h = _get_terminal_size()
         self.c1, self.c2 = c1, c2
-        self.curr = 0
-        self.progress = 0  # Track logical progress out of total
+
+        self.t = total
+        self.curr, self.progress = 0, 0
+
         self.start_time = time.time()
+
         if self.t > self.w:
             self.g = list(interp_xyz(c1, c2, self.t + 1))
         else:
             self.g = list(interp_xyz(c1, c2, self.w + 1))
 
         self._iter_pbar = iter(self._pbar())
+
+        self.is_exiting = False
+        signal.signal(signal.SIGINT, self.sigint_handler)
+
+    def sigint_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
+        self.is_exiting = True
+        self._reset_terminal()
+        sys.exit(0)
 
     @staticmethod
     def randgrad() -> tuple[RGB, RGB]:
@@ -167,19 +190,26 @@ class PBar:
         self._print_info()
         return self
 
+    @staticmethod
+    def _reset_terminal() -> None:
+        w, h = _get_terminal_size()
+        _print_to_terminal(
+            '\x1b[?25h'  # show cursor
+            f'\x1b[0;{h}r'  # reset margins
+            f'\x1b[{h};1000H'  # move to bottom line
+            '\n'
+        )
+
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
         # TODO: this is to ensure that the bar draws the full width. it should have done this already?
+        if self.is_exiting:
+            return
         while True:
             try:
                 next(self)
             except StopIteration:
                 break
-        _print_to_terminal(
-            '\x1b[?25h'  # show cursor
-            f'\x1b[0;{self.h}r'  # reset margins
-            f'\x1b[{self.h};0H'  # move to bottom line
-            '\n'
-        )
+        self._reset_terminal()
         self.curr = self.t
 
 

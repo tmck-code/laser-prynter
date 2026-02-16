@@ -186,6 +186,6 @@ class PBar:
 if __name__ == '__main__':
     with PBar(200, *PBar.randgrad()) as pbar:
         for i in range(200):
-            time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
-            print(f'-> {i}')
+            time.sleep(randint(int(0.01 * 100), int(0.2 * 100)) / 100)
+            print(f'-> {i}', flush=True)
             pbar.update(1)

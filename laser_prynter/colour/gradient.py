@@ -1,13 +1,12 @@
 from __future__ import annotations
-from itertools import repeat
-from itertools import chain
-from dataclasses import dataclass, field
-from itertools import starmap
-from functools import partial
+
 import operator
 import os
 import re
-from typing import List, TypeAlias, Iterable, Literal, Iterator, Dict
+from dataclasses import dataclass, field
+from functools import partial
+from itertools import chain, repeat, starmap
+from typing import Dict, Iterable, Iterator, List, Literal, TypeAlias
 
 from laser_prynter.colour import c
 
@@ -24,10 +23,8 @@ class Face:
 
     def __post_init__(self) -> None:
         if self.with_rotations:
-            self.rotations = [Face._rot90(
-                self.rows, n, flip=False) for n in range(4)]
-            self.flipped_rotations = [Face._rot90(
-                self.rows, n, flip=True) for n in range(4)]
+            self.rotations = [Face._rot90(self.rows, n, flip=False) for n in range(4)]
+            self.flipped_rotations = [Face._rot90(self.rows, n, flip=True) for n in range(4)]
 
     @staticmethod
     def _rot90(rows: List[Row], n: int = 1, flip: bool = False) -> Face:
@@ -57,9 +54,11 @@ class Face:
     def empty_face(width: int = 6) -> Face:
         return Face([[c.from_ansi(256)] * width] * width)
 
-    def iter_s(self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 15) -> Iterable[str]:
+    def iter_s(
+        self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 15
+    ) -> Iterable[str]:
         for row in self.__iter__():
-            p = [cell.colorise(' '*cell_width) for cell in row]
+            p = [cell.colorise(' ' * cell_width) for cell in row]
             # r = [cell.colorise(f'{cell.ansi_n:^{cell_width}}') for cell in row]
             r = [cell.colorise(f'{str(cell.rgb):^{cell_width}}') for cell in row]
 
@@ -72,12 +71,15 @@ class Face:
         print('\n'.join(self.iter_s(padding_top, padding_bottom, cell_width)))
 
 
-ANSI_COLOURS = re.compile(r"""
+ANSI_COLOURS = re.compile(
+    r"""
     \x1b     # literal ESC
     \[       # literal [
     [;\d]*   # zero or more digits or semicolons
     [A-Za-z] # a letter
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 
 
 @dataclass
@@ -97,9 +99,13 @@ class Faces:
             for row in zip(*face_row):
                 yield list(row)
 
-    def iter_s(self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> Iterable[str]:
+    def iter_s(
+        self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6
+    ) -> Iterable[str]:
         for face_row in self.faces:
-            for row in zip(*[face.iter_s(padding_top, padding_bottom, cell_width) for face in face_row]):
+            for row in zip(*[
+                face.iter_s(padding_top, padding_bottom, cell_width) for face in face_row
+            ]):
                 yield ''.join(row)
 
     def as_str(self, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> str:
@@ -116,29 +122,6 @@ class Faces:
 
 def distance(c1: tuple[int, int, int], c2: tuple[int, int, int]) -> float:
     return float(abs(sum(starmap(operator.sub, zip(c2, c1)))))
-
-# In[69]: c1, c2 = (95, 135, 0), (0, 135, 255)
-# r = interp_xyz(c1, c2, 20)
-
-
-def lerp(v0: float, v1: float, t: int) -> float:
-    '''
-    Precise method for iterpolation, which guarantees v = v1 when t = 1.
-    This method is monotonic only when v0 * v1 < 0.
-    Lerping between same values might not produce the same value
-    (from: https://en.wikipedia.org/wiki/Linear_interpolation#Programming_language_support)
-    '''
-    return round((1 - (t/10)) * v0 + (t/10) * v1, 2)
-
-
-def interp(v0: float, v1: float, n_t: int) -> list[float]:
-    i = partial(lerp, v0, v1)
-    ts = list(map(lambda x: x/((n_t-1)/10), range(0, n_t)))
-    return list(map(i, ts))
-
-
-def interp_xyz(c1: tuple[int, int, int], c2: tuple[int, int, int], n_t: int) -> list[tuple[float, ...]]:
-    return list(zip(*starmap(interp, zip(c1, c2, repeat(n_t)))))
 
 
 @dataclass
@@ -170,18 +153,28 @@ class RGBCube:
         for face in self.faces:
             for rot in range(4):
                 for flip in (False, True):
-                    if edge_type == 'ts' and RGBCube.compare_rows(face.rot90(rot, flip=flip)[-1], edge):
+                    if edge_type == 'ts' and RGBCube.compare_rows(
+                        face.rot90(rot, flip=flip)[-1], edge
+                    ):
                         return face.rot90(rot, flip=flip)
-                    elif edge_type == 'bs' and RGBCube.compare_rows(face.rot90(rot, flip=flip)[0], edge):
+                    elif edge_type == 'bs' and RGBCube.compare_rows(
+                        face.rot90(rot, flip=flip)[0], edge
+                    ):
                         return face.rot90(rot, flip=flip)
-                    elif edge_type == 'lhs' and RGBCube.compare_rows([r[-1] for r in face.rot90(rot, flip=flip)], edge):
+                    elif edge_type == 'lhs' and RGBCube.compare_rows(
+                        [r[-1] for r in face.rot90(rot, flip=flip)], edge
+                    ):
                         return face.rot90(rot, flip=flip)
-                    elif edge_type == 'rhs' and RGBCube.compare_rows([r[0] for r in face.rot90(rot, flip=flip)], edge):
+                    elif edge_type == 'rhs' and RGBCube.compare_rows(
+                        [r[0] for r in face.rot90(rot, flip=flip)], edge
+                    ):
                         return face.rot90(rot, flip=flip)
         raise ValueError('No face with matching edge found')
 
     @staticmethod
-    def from_ranges(c1: Literal[c._RGB_COMPONENT], c2: c._RGB_COMPONENT, c3: c._RGB_COMPONENT) -> RGBCube:
+    def from_ranges(
+        c1: Literal[c._RGB_COMPONENT], c2: c._RGB_COMPONENT, c3: c._RGB_COMPONENT
+    ) -> RGBCube:
         '''
         Create a 6x6x6 cube of RGB values, where each face is a 6x6 grid of cells.
         Takes an 'order' of RGB components, where
@@ -209,7 +202,13 @@ class RGBCubeCollection:
     def __post_init__(self) -> None:
         self.width = os.get_terminal_size().columns
 
-    def print(self, grid_sep: str = ' '*2, padding_top: int = 0, padding_bottom: int = 0, cell_width: int = 6) -> None:
+    def print(
+        self,
+        grid_sep: str = ' ' * 2,
+        padding_top: int = 0,
+        padding_bottom: int = 0,
+        cell_width: int = 6,
+    ) -> None:
         groups: List[Dict[str, RGBCube]] = []
         current_group: Dict[str, RGBCube] = {}
         for name, cube in self.cubes.items():
@@ -224,10 +223,15 @@ class RGBCubeCollection:
             for name, cube in g.items():
                 print(f'{name:<{cube.str_width}s}', end=grid_sep)
             print()
-            for rows in zip(*[cube.faces.iter_s(padding_top, padding_bottom, cell_width) for n, cube in g.items()]):
+            for rows in zip(*[
+                cube.faces.iter_s(padding_top, padding_bottom, cell_width) for n, cube in g.items()
+            ]):
                 print(grid_sep.join(rows))
 
-def find_face_with_edge(collection: RGBCubeCollection, face_name: str, face: Face, edge_type: str) -> tuple[Face, str]:
+
+def find_face_with_edge(
+    collection: RGBCubeCollection, face_name: str, face: Face, edge_type: str
+) -> tuple[Face, str]:
     for n, cube in collection.cubes.items():
         if n == face_name:
             continue
@@ -249,22 +253,73 @@ def create_cube(f1: Face, f1_name: str, cube_collection: RGBCubeCollection) -> N
 
     faces = [
         [Face.empty_face(6), f4, Face.empty_face(6)],
-        [f2,                 f1, Face.empty_face(6)],
+        [f2, f1, Face.empty_face(6)],
         [Face.empty_face(6), f3, f5],
         [Face.empty_face(6), f6, Face.empty_face(6)],
     ]
     Faces(faces).print(padding_top=0, padding_bottom=1, cell_width=15)
 
-    # c1 = f2[2][3].rgb
-    # c2 = f4[2][3].rgb
 
-    # print(f'c1: {c1}, c2: {c2}')
+@dataclass
+class Gradient:
+    'Represents a gradient between two RGB colours.'
 
-    # grad = interp_xyz(c1, c2, 10)
-    # for r, g, b in grad:
-    #     print(
-    #         '\033[48;5;{};{};{}m'.format(
-    #             int(r), int(g), int(b)
-    #         ) + f'{str((r, g, b)):^10s}' + '\033[0m'
-    #     )
-        # print(c.from_rgb(r, g, b).colorise(' '*8))
+    start: c.RGBColour
+    end: c.RGBColour
+    steps: int
+
+    @staticmethod
+    def lerp(val0: float, val1: float, fraction: float) -> float:
+        '''
+        Precise method for iterpolation, which guarantees v = v1 when t = 1.
+        (the very end value of this gradient will be exactly the end colour i.e. no rounding errors)
+        (from: https://en.wikipedia.org/wiki/Linear_interpolation#Programming_language_support)
+
+        note: 0.0 <= fraction <= 1.0
+        '''
+        if not 0.0 <= fraction <= 1.0:
+            raise ValueError(f'Fraction must be between 0.0 and 1.0: {fraction}')
+        return round(
+            (1 - fraction) * val0 + fraction * val1,
+            2,
+        )
+
+    @staticmethod
+    def interp(v0: float, v1: float, n_steps: int) -> list[float]:
+        return list(
+            map(
+                partial(Gradient.lerp, v0, v1),
+                list(
+                    map(
+                        lambda x: x / (n_steps - 1),
+                        range(0, n_steps),
+                    )
+                ),
+            )
+        )
+
+    @staticmethod
+    def interp_xyz(
+        c1: tuple[int, int, int], c2: tuple[int, int, int], n_steps: int
+    ) -> list[tuple[float, ...]]:
+        return list(
+            zip(
+                *starmap(
+                    Gradient.interp,
+                    zip(c1, c2, repeat(n_steps)),
+                )
+            )
+        )
+
+
+@dataclass
+class RGBGradient(Gradient):
+    sequence: list[c.RGBColour] = field(init=False)
+
+    def __post_init__(self) -> None:
+        seq = self.interp_xyz(
+            c1=(self.start.r, self.start.g, self.start.b),
+            c2=(self.end.r, self.end.g, self.end.b),
+            n_steps=self.steps,
+        )
+        self.sequence = [c.RGBColour(*map(int, color)) for color in seq]

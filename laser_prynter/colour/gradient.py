@@ -123,29 +123,6 @@ class Faces:
 def distance(c1: tuple[int, int, int], c2: tuple[int, int, int]) -> float:
     return float(abs(sum(starmap(operator.sub, zip(c2, c1)))))
 
-# In[69]: c1, c2 = (95, 135, 0), (0, 135, 255)
-# r = interp_xyz(c1, c2, 20)
-
-
-def lerp(v0: float, v1: float, t: int) -> float:
-    '''
-    Precise method for iterpolation, which guarantees v = v1 when t = 1.
-    This method is monotonic only when v0 * v1 < 0.
-    Lerping between same values might not produce the same value
-    (from: https://en.wikipedia.org/wiki/Linear_interpolation#Programming_language_support)
-    '''
-    return round((1 - (t/10)) * v0 + (t/10) * v1, 2)
-
-
-def interp(v0: float, v1: float, n_t: int) -> list[float]:
-    i = partial(lerp, v0, v1)
-    ts = list(map(lambda x: x/((n_t-1)/10), range(0, n_t)))
-    return list(map(i, ts))
-
-
-def interp_xyz(c1: tuple[int, int, int], c2: tuple[int, int, int], n_t: int) -> list[tuple[float, ...]]:
-    return list(zip(*starmap(interp, zip(c1, c2, repeat(n_t)))))
-
 
 @dataclass
 class RGBCube:
@@ -283,13 +260,68 @@ def create_cube(f1: Face, f1_name: str, cube_collection: RGBCubeCollection) -> N
     Faces(faces).print(padding_top=0, padding_bottom=1, cell_width=15)
 
 
-    # print(f'c1: {c1}, c2: {c2}')
+@dataclass
+class Gradient:
+    'Represents a gradient between two RGB colours.'
 
-    # grad = interp_xyz(c1, c2, 10)
-    # for r, g, b in grad:
-    #     print(
-    #         '\033[48;5;{};{};{}m'.format(
-    #             int(r), int(g), int(b)
-    #         ) + f'{str((r, g, b)):^10s}' + '\033[0m'
-    #     )
-        # print(c.from_rgb(r, g, b).colorise(' '*8))
+    start: c.RGBColour
+    end: c.RGBColour
+    steps: int
+
+    @staticmethod
+    def lerp(val0: float, val1: float, fraction: float) -> float:
+        '''
+        Precise method for iterpolation, which guarantees v = v1 when t = 1.
+        (the very end value of this gradient will be exactly the end colour i.e. no rounding errors)
+        (from: https://en.wikipedia.org/wiki/Linear_interpolation#Programming_language_support)
+
+        note: 0.0 <= fraction <= 1.0
+        '''
+        print(val0, val1, fraction)
+        fraction = fraction / 10  # scale to 0.0-1.0
+        if not 0.0 <= fraction <= 1.0:
+            raise ValueError(f'Fraction must be between 0.0 and 1.0: {fraction}')
+        return round(
+            (1 - (fraction / 10)) * val0 + (fraction / 10) * val1,
+            2,
+        )
+
+    @staticmethod
+    def interp(v0: float, v1: float, n_steps: int) -> list[float]:
+        return list(
+            map(
+                partial(Gradient.lerp, v0, v1),
+                list(
+                    map(
+                        lambda x: x / ((n_steps - 1) / 10),
+                        range(0, n_steps),
+                    )
+                ),
+            )
+        )
+
+    @staticmethod
+    def interp_xyz(
+        c1: tuple[int, int, int], c2: tuple[int, int, int], n_steps: int
+    ) -> list[tuple[float, ...]]:
+        return list(
+            zip(
+                *starmap(
+                    Gradient.interp,
+                    zip(c1, c2, repeat(n_steps)),
+                )
+            )
+        )
+
+
+@dataclass
+class RGBGradient(Gradient):
+    sequence: list[c.RGBColour] = field(init=False)
+
+    def __post_init__(self) -> None:
+        seq = self.interp_xyz(
+            c1=(self.start.r, self.start.g, self.start.b),
+            c2=(self.end.r, self.end.g, self.end.b),
+            n_steps=self.steps,
+        )
+        self.sequence = [c.RGBColour(*map(int, color)) for color in seq]

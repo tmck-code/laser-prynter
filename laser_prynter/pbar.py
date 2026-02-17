@@ -43,10 +43,10 @@ class PBar:
     def _pbar_terminal_x_at(self, n: int) -> int:
         'Where 0 <= n <= self.t, return the corresponding terminal position the progress bar.'
 
-        # if n < 0 or n > self.t:
-        #     raise ValueError(f'Progress n must be between 0 and total {self.t}: {n}')
-
-        return math.ceil((n / self.t) * self.w)
+        if 0 <= n <= self.t:
+            return math.ceil((n / self.t) * self.w)
+        else:
+            raise ValueError(f'n must be between 0 and total {self.t}: {n}')
 
     def _pbar_colour_at(self, n: int) -> RGBColour:
         'Where 0 <= n <= self.t, return the corresponding colour for the progress bar.'
@@ -122,7 +122,7 @@ class PBar:
 
         target_pos = self._pbar_terminal_x_at(self.i + n)
 
-        for pos in range(self.x_pos, target_pos):
+        for pos in range(self.x_pos, target_pos + 1):
             self._print_bar_char(' ', self._pbar_colour_at(pos), pos)
 
         self.i += n

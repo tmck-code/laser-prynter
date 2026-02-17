@@ -13,15 +13,6 @@ from laser_prynter.colour.c import RGBColour
 from laser_prynter.colour.gradient import RGBGradient
 
 
-def indexes(t: int, w: int) -> Iterator[int]:
-    if t > w:
-        for i in range(t + 1):
-            yield int(i * (w / t))
-    else:
-        for i in range(w + 1):
-            yield int(i * (t / w))
-
-
 def _print_to_terminal(s: str) -> None:
     'Helper function to perform ANSI escape sequences.'
     sys.stdout.write(s)
@@ -123,9 +114,8 @@ class PBar:
     def _initial_bar(self) -> None:
         'print initial bar in end color'
 
-        for i in range(self.w):
-            for x_pos in range(self._pbar_terminal_x_at(i - 1), self._pbar_terminal_x_at(i)):
-                self._print_bar_char(' ', self._pbar_colour_at(self.w), x_pos)
+        for x_pos in range(self.w + 1):
+            self._print_bar_char(' ', self._pbar_colour_at(self.w), x_pos)
 
     def update(self, n: int) -> None:
         'update the progress bar by n steps'

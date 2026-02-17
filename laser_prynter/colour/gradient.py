@@ -277,7 +277,6 @@ class Gradient:
 
         note: 0.0 <= fraction <= 1.0
         '''
-        fraction = fraction / 10  # scale to 0.0-1.0
         if not 0.0 <= fraction <= 1.0:
             raise ValueError(f'Fraction must be between 0.0 and 1.0: {fraction}')
         return round(

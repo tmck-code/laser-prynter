@@ -104,3 +104,23 @@ def from_cube_coords(r: int, g: int, b: int) -> ANSIColour:
 def from_ansi(n: int) -> ANSIColour:
     'Creates an ANSIColour from an ANSI colour code.'
     return ANSIColour(ansi_n=n, rgb=ansi_to_rgb(n))
+
+
+class RGBColour(NamedTuple):
+    r: int
+    g: int
+    b: int
+
+    @staticmethod
+    def randgrad() -> tuple[RGBColour, RGBColour]:
+        rgb1 = RGBColour(
+            randint(0, 255),
+            randint(0, 255),
+            randint(0, 255),
+        )
+        rgb2 = RGBColour(
+            (rgb1.r + (255 + (255 // 2))) % 255,
+            (rgb1.g + (255 + (255 // 2))) % 255,
+            (rgb1.b + (255 + (255 // 2))) % 255,
+        )
+        return (rgb1, rgb2)

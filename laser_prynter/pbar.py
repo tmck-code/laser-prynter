@@ -40,9 +40,9 @@ class PBar:
         self.progress = 0  # Track logical progress out of total
         self.start_time = time.time()
         if self.t > self.w:
-            self.g = RGBGradient(start=c1, end=c2, steps=self.t + 1)
+            self.g = RGBGradient(start=c1, end=c2, steps=self.t)
         else:
-            self.g = RGBGradient(start=c1, end=c2, steps=self.w + 1)
+            self.g = RGBGradient(start=c1, end=c2, steps=self.w)
 
         self._iter_pbar = iter(self._pbar())
 
@@ -57,7 +57,7 @@ class PBar:
     def _pbar(self) -> Iterator[tuple[tuple[int, RGBColour]]]:
         for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?
             if self.t > self.w:
-                tpos = int((x / self.w) * self.t)
+                tpos = int((x / (self.w + 1)) * (self.t + 1))
                 color = self.g.sequence[tpos]
             else:
                 color = self.g.sequence[x]
@@ -183,5 +183,4 @@ if __name__ == '__main__':
         for i in range(200):
             time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
             print(f'-> {i}')
-            pbar.update(1)
             pbar.update(1)

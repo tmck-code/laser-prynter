@@ -277,12 +277,11 @@ class Gradient:
 
         note: 0.0 <= fraction <= 1.0
         '''
-        print(val0, val1, fraction)
         fraction = fraction / 10  # scale to 0.0-1.0
         if not 0.0 <= fraction <= 1.0:
             raise ValueError(f'Fraction must be between 0.0 and 1.0: {fraction}')
         return round(
-            (1 - (fraction / 10)) * val0 + (fraction / 10) * val1,
+            (1 - fraction) * val0 + fraction * val1,
             2,
         )
 
@@ -293,7 +292,7 @@ class Gradient:
                 partial(Gradient.lerp, v0, v1),
                 list(
                     map(
-                        lambda x: x / ((n_steps - 1) / 10),
+                        lambda x: x / (n_steps - 1),
                         range(0, n_steps),
                     )
                 ),

@@ -110,10 +110,11 @@ class PBar:
             '\x1b8'  # restore cursor position
         )
 
-    def _print_bar_char(self, s: str, x_pos: int) -> None:
+    def _print_bar_char(self, s: str, colour: RGBColour, x_pos: int) -> None:
         _print_to_terminal(
             '\x1b7'  # save cursor position
             f'\x1b[{self.h};{x_pos}H'  # move to bottom line
+            f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m'
             f'{s}'  # the 'bar' characters
             '\x1b[0m'  # reset color
             '\x1b8'  # restore cursor position
@@ -123,21 +124,16 @@ class PBar:
         'print initial bar in end color'
 
         for i in range(self.w):
-            self._print_bar_char(
-                f'\x1b[48;2;{self.g.end.r};{self.g.end.g};{self.g.end.b}m'
-                + ' ' * self.w
-                + '\x1b[0m',
-                i,
-            )
+            for x_pos in range(self._pbar_terminal_x_at(i - 1), self._pbar_terminal_x_at(i)):
+                self._print_bar_char(' ', self._pbar_colour_at(self.w), x_pos)
 
     def update(self, n: int) -> None:
         'update the progress bar by n steps'
 
-        target_pos = self._pbar_terminal_x_at(self.i + n) + 1
+        target_pos = self._pbar_terminal_x_at(self.i + n)
 
         for pos in range(self.x_pos, target_pos):
-            colour = self._pbar_colour_at(pos)
-            self._print_bar_char(f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m ', pos)
+            self._print_bar_char(' ', self._pbar_colour_at(pos), pos)
 
         self.i += n
         self.x_pos = target_pos
@@ -159,10 +155,9 @@ class PBar:
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
-        self.update(1)
         _print_to_terminal(
             f'\x1b[0;{self.h}r'  # reset margins
-            f'\x1b[{self.h};1000H'  # move to bottom line
+            f'\x1b[{self.h};0H'  # move to bottom line
             '\n'
             '\x1b[?25h'  # show cursor
         )

@@ -1,19 +1,20 @@
 'This module contains functions for converting between RGB and ANSI colour codes.'
 
 from __future__ import annotations
+
+from random import randint
 from types import MappingProxyType
-from typing import Literal, TypeAlias, NamedTuple, Any, Tuple
+from typing import Any, Literal, NamedTuple, Tuple, TypeAlias
 
 # Valid components of an RGB tuple.
 _RGB_COMPONENT: TypeAlias = Literal['r', 'g', 'b']
-_RGB_COMPONENTS: Tuple[_RGB_COMPONENT,
-                       _RGB_COMPONENT, _RGB_COMPONENT] = ('r', 'g', 'b')
+_RGB_COMPONENTS: Tuple[_RGB_COMPONENT, _RGB_COMPONENT, _RGB_COMPONENT] = ('r', 'g', 'b')
 
 # Multipliers for each component of the RGB tuple in the ANSI colour code formula.
 _RGB_COMPONENT_MULTIPLIER: MappingProxyType[_RGB_COMPONENT, int] = MappingProxyType({
     'r': 36,
     'g': 6,
-    'b': 1
+    'b': 1,
 })
 
 
@@ -31,9 +32,9 @@ def _ansi_to_rgb_component(n: int, component: _RGB_COMPONENT) -> int:
 
     i = (
         (n - 16)  # 16 is the base value
-                  # divide by 36/6/1
+        # divide by 36/6/1
         // _RGB_COMPONENT_MULTIPLIER[component]
-        % 6       # each value can be 0-5
+        % 6  # each value can be 0-5
     )
     if i == 0:
         return 0
@@ -51,7 +52,7 @@ def ansi_to_rgb(n: int) -> tuple[int, int, int]:
 
 
 def cube_coords_to_ansi(r: int, g: int, b: int) -> int:
-    ''''
+    ''' '
     The golden formula. Via https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit:
       0-  7:  standard colors (as in ESC [ 30–37 m)
       8- 15:  high intensity colors (as in ESC [ 90–97 m)
@@ -59,9 +60,9 @@ def cube_coords_to_ansi(r: int, g: int, b: int) -> int:
     232-255:  grayscale from dark to light in 24 steps
     '''
     return 16 + (
-        r * _RGB_COMPONENT_MULTIPLIER['r'] +
-        g * _RGB_COMPONENT_MULTIPLIER['g'] +
-        b * _RGB_COMPONENT_MULTIPLIER['b']
+        r * _RGB_COMPONENT_MULTIPLIER['r']
+        + g * _RGB_COMPONENT_MULTIPLIER['g']
+        + b * _RGB_COMPONENT_MULTIPLIER['b']
     )
 
 
@@ -77,6 +78,7 @@ RESET: str = '\033[0m'
 
 class ANSIColour(NamedTuple):
     'Represents a terminal colour in both RGB and ANSI formats.'
+
     ansi_n: int
     rgb: tuple[int, int, int]
 

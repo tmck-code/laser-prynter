@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import shutil
 import sys
 import time
@@ -35,16 +36,10 @@ class PBar:
         self.t = total
         self.w = shutil.get_terminal_size().columns
         self.h = shutil.get_terminal_size().lines
-        self.c1, self.c2 = c1, c2
-        self.curr = 0
-        self.progress = 0  # Track logical progress out of total
+        self.x_pos, self.i = 0, 0
         self.start_time = time.time()
-        if self.t > self.w:
-            self.g = RGBGradient(start=c1, end=c2, steps=self.t)
-        else:
-            self.g = RGBGradient(start=c1, end=c2, steps=self.w)
 
-        self._iter_pbar = iter(self._pbar())
+        self.g = RGBGradient(start=c1, end=c2, steps=self.w)
 
     @staticmethod
     def randgrad() -> tuple[RGBColour, RGBColour]:
@@ -54,15 +49,21 @@ class PBar:
             RGBColour(randint(0, 255), randint(0, 255), randint(0, 255)),
         )
 
-    def _pbar(self) -> Iterator[tuple[tuple[int, RGBColour]]]:
-        for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?
-            if self.t > self.w:
-                tpos = int((x / (self.w + 1)) * (self.t + 1))
-                color = self.g.sequence[tpos]
-            else:
-                color = self.g.sequence[x]
+    def _pbar_terminal_x_at(self, n: int) -> int:
+        'Where 0 <= n <= self.t, return the corresponding terminal position the progress bar.'
 
-            yield ((x, RGBColour(*map(int, color))),)
+        # if n < 0 or n > self.t:
+        #     raise ValueError(f'Progress n must be between 0 and total {self.t}: {n}')
+
+        return math.ceil((n / self.t) * self.w)
+
+    def _pbar_colour_at(self, n: int) -> RGBColour:
+        'Where 0 <= n <= self.t, return the corresponding colour for the progress bar.'
+        return self.g.sequence[n] if n < self.w else self.g.end
+
+    def _pbar(self) -> Iterator[tuple[tuple[int, RGBColour]]]:
+        for x in range(self.w):
+            yield ((x, self.g.sequence[x]),)
 
     def __iter__(self) -> PBar:
         return self
@@ -91,13 +92,13 @@ class PBar:
 
         elapsed = time.time() - self.start_time
 
-        if self.progress == 0:
+        if self.i == 0:
             eta_str = '??:??'
         else:
-            eta_str = self._format_time((elapsed / self.progress) * (self.t - self.progress))
+            eta_str = self._format_time((elapsed / self.i) * (self.t - self.i))
 
-        pct = (self.progress / self.t) * 100
-        item_info = f'[\x1b[1;32m{self.progress}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
+        pct = (self.i / self.t) * 100
+        item_info = f'[\x1b[1;32m{self.i}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
         time_info = f'\x1b[92m+{self._format_time(elapsed)}\x1b[0m \x1b[93m-{eta_str}\x1b[0m'
 
         # Clear the line and print info above the progress bar
@@ -109,10 +110,10 @@ class PBar:
             '\x1b8'  # restore cursor position
         )
 
-    def _print_bar_chars(self, s: str) -> None:
+    def _print_bar_char(self, s: str, x_pos: int) -> None:
         _print_to_terminal(
             '\x1b7'  # save cursor position
-            f'\x1b[{self.h};{self.curr}H'  # move to bottom line
+            f'\x1b[{self.h};{x_pos}H'  # move to bottom line
             f'{s}'  # the 'bar' characters
             '\x1b[0m'  # reset color
             '\x1b8'  # restore cursor position
@@ -121,31 +122,28 @@ class PBar:
     def _initial_bar(self) -> None:
         'print initial bar in end color'
 
-        self._print_bar_chars(
-            f'\x1b[48;2;{self.c2.r};{self.c2.g};{self.c2.b}m' + ' ' * self.w + '\x1b[0m'
-        )
-
-    def __next__(self) -> None:
-        s = [f'{self._true_colour(rgbColour)} ' for _, rgbColour in next(self._iter_pbar)]
-        self._print_bar_chars(''.join(s))
-
-        self.curr += len(s)
-        if self.curr > self.w:
-            raise StopIteration
+        for i in range(self.w):
+            self._print_bar_char(
+                f'\x1b[48;2;{self.g.end.r};{self.g.end.g};{self.g.end.b}m'
+                + ' ' * self.w
+                + '\x1b[0m',
+                i,
+            )
 
     def update(self, n: int) -> None:
         'update the progress bar by n steps'
 
-        self.progress = min(self.progress + n, self.t)
-        # Calculate target terminal position based on logical progress
-        target_pos = int((self.progress / (self.t)) * self.w)
-        # Update bar to target position
-        while self.curr < target_pos:
-            try:
-                next(self)
-            except StopIteration:
-                break
-        # Update progress info
+        target_pos = self._pbar_terminal_x_at(self.i + n) + 1
+        print(f'{target_pos=}, {self.x_pos=}, {self.i=}, {n=}')
+
+        for pos in range(self.x_pos, target_pos):
+            print(f'{pos=}')
+            colour = self._pbar_colour_at(pos)
+            self._print_bar_char(f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m ', pos)
+
+        self.i += n
+        self.x_pos = target_pos
+
         self._print_info()
 
     def __enter__(self) -> PBar:
@@ -163,24 +161,17 @@ class PBar:
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
-        # TODO: this is to ensure that the bar draws the full width. it should have done this already?
-        while True:
-            try:
-                next(self)
-            except StopIteration:
-                break
         _print_to_terminal(
-            '\x1b[?25h'  # show cursor
             f'\x1b[0;{self.h}r'  # reset margins
-            f'\x1b[{self.h};0H'  # move to bottom line
+            f'\x1b[{self.h};1000H'  # move to bottom line
             '\n'
+            '\x1b[?25h'  # show cursor
         )
-        self.curr = self.t
 
 
 if __name__ == '__main__':
-    with PBar(200, *PBar.randgrad()) as pbar:
-        for i in range(200):
+    with PBar(100, *PBar.randgrad()) as pbar:
+        for i in range(100):
             time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
             print(f'-> {i}')
             pbar.update(1)

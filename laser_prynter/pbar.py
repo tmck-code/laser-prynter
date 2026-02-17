@@ -6,9 +6,10 @@ import shutil
 import sys
 import time
 from random import randint
-from typing import Iterator, NamedTuple
+from typing import Iterator
 
-from laser_prynter.colour.gradient import interp_xyz
+from laser_prynter.colour.c import RGBColour
+from laser_prynter.colour.gradient import RGBGradient
 
 
 def indexes(t: int, w: int) -> Iterator[int]:
@@ -26,17 +27,11 @@ def _print_to_terminal(s: str) -> None:
     sys.stdout.flush()
 
 
-class RGB(NamedTuple):
-    r: int
-    g: int
-    b: int
-
-
-DEFAULT_C1, DEFAULT_C2 = RGB(240, 50, 0), RGB(10, 220, 0)
+DEFAULT_C1, DEFAULT_C2 = RGBColour(240, 50, 0), RGBColour(10, 220, 0)
 
 
 class PBar:
-    def __init__(self, total: int, c1: RGB = DEFAULT_C1, c2: RGB = DEFAULT_C2):
+    def __init__(self, total: int, c1: RGBColour = DEFAULT_C1, c2: RGBColour = DEFAULT_C2):
         self.t = total
         self.w = shutil.get_terminal_size().columns
         self.h = shutil.get_terminal_size().lines
@@ -45,36 +40,36 @@ class PBar:
         self.progress = 0  # Track logical progress out of total
         self.start_time = time.time()
         if self.t > self.w:
-            self.g = list(interp_xyz(c1, c2, self.t + 1))
+            self.g = RGBGradient(start=c1, end=c2, steps=self.t + 1)
         else:
-            self.g = list(interp_xyz(c1, c2, self.w + 1))
+            self.g = RGBGradient(start=c1, end=c2, steps=self.w + 1)
 
         self._iter_pbar = iter(self._pbar())
 
     @staticmethod
-    def randgrad() -> tuple[RGB, RGB]:
-        rgb1 = RGB(randint(0, 255), randint(0, 255), randint(0, 255))
-        rgb2 = RGB(
-            (rgb1.r + (255 // 2)) % 255, (rgb1.g + (255 // 2)) % 255, (rgb1.b + (255 // 2)) % 255
+    def randgrad() -> tuple[RGBColour, RGBColour]:
+        'Generate a random gradient colour pair.'
+        return (
+            RGBColour(randint(0, 255), randint(0, 255), randint(0, 255)),
+            RGBColour(randint(0, 255), randint(0, 255), randint(0, 255)),
         )
-        return (rgb1, rgb2)
 
-    def _pbar(self) -> Iterator[tuple[tuple[int, RGB]]]:
+    def _pbar(self) -> Iterator[tuple[tuple[int, RGBColour]]]:
         for x in range(self.w + 1):  # TODO: i'm so dumb, why do I need a +1 here?
             if self.t > self.w:
                 tpos = int((x / self.w) * self.t)
-                color = self.g[tpos]
+                color = self.g.sequence[tpos]
             else:
-                color = self.g[x]
+                color = self.g.sequence[x]
 
-            yield ((x, RGB(*map(int, color))),)
+            yield ((x, RGBColour(*map(int, color))),)
 
     def __iter__(self) -> PBar:
         return self
 
     @staticmethod
-    def _true_colour(rgb: RGB) -> str:
-        return f'\x1b[48;2;{rgb.r};{rgb.g};{rgb.b}m'
+    def _true_colour(rgbColour: RGBColour) -> str:
+        return f'\x1b[48;2;{rgbColour.r};{rgbColour.g};{rgbColour.b}m'
 
     @staticmethod
     def _format_time(seconds: float) -> str:
@@ -131,7 +126,7 @@ class PBar:
         )
 
     def __next__(self) -> None:
-        s = [f'{self._true_colour(rgb)} ' for _, rgb in next(self._iter_pbar)]
+        s = [f'{self._true_colour(rgbColour)} ' for _, rgbColour in next(self._iter_pbar)]
         self._print_bar_chars(''.join(s))
 
         self.curr += len(s)
@@ -188,4 +183,5 @@ if __name__ == '__main__':
         for i in range(200):
             time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
             print(f'-> {i}')
+            pbar.update(1)
             pbar.update(1)

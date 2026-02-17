@@ -134,10 +134,8 @@ class PBar:
         'update the progress bar by n steps'
 
         target_pos = self._pbar_terminal_x_at(self.i + n) + 1
-        print(f'{target_pos=}, {self.x_pos=}, {self.i=}, {n=}')
 
         for pos in range(self.x_pos, target_pos):
-            print(f'{pos=}')
             colour = self._pbar_colour_at(pos)
             self._print_bar_char(f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m ', pos)
 
@@ -161,6 +159,7 @@ class PBar:
         return self
 
     def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
+        self.update(1)
         _print_to_terminal(
             f'\x1b[0;{self.h}r'  # reset margins
             f'\x1b[{self.h};1000H'  # move to bottom line
@@ -173,5 +172,5 @@ if __name__ == '__main__':
     with PBar(100, *PBar.randgrad()) as pbar:
         for i in range(100):
             time.sleep(randint(int(0.01 * 100), int(0.1 * 100)) / 100)
-            print(f'-> {i}')
+            print(f'-> {i}', flush=True)
             pbar.update(1)

@@ -22,12 +22,17 @@ def _print_to_terminal(s: str) -> None:
 
 
 def _get_terminal_size() -> tuple[int, int]:
-    'Get terminal size (width, height)'
+    '''
+    Get terminal size (width, height)
+    - first try STDERR (as STDOUT is more likely to be redirected),
+    - then try STDOUT
+    - if both fail, return default (80, 24).
+    '''
     try:
-        size = os.get_terminal_size(1)
+        size = os.get_terminal_size(2)
     except OSError:
         try:
-            size = os.get_terminal_size(2)
+            size = os.get_terminal_size(1)
         except OSError:
             return (80, 24)
     return (size.columns, size.lines)

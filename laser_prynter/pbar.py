@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
-import shutil
+import os
+import signal
 import sys
 import time
+import types
 from random import randint
 from typing import Iterator
 
@@ -15,8 +17,25 @@ from laser_prynter.colour.gradient import RGBGradient
 
 def _print_to_terminal(s: str) -> None:
     'Helper function to perform ANSI escape sequences.'
-    sys.stdout.write(s)
-    sys.stdout.flush()
+    sys.stderr.write(s)
+    sys.stderr.flush()
+
+
+def _get_terminal_size() -> tuple[int, int]:
+    '''
+    Get terminal size (width, height)
+    - first try STDERR (as STDOUT is more likely to be redirected),
+    - then try STDOUT
+    - if both fail, return default (80, 24).
+    '''
+    try:
+        size = os.get_terminal_size(2)
+    except OSError:
+        try:
+            size = os.get_terminal_size(1)
+        except OSError:
+            return (80, 24)
+    return (size.columns, size.lines)
 
 
 DEFAULT_C1, DEFAULT_C2 = RGBColour(240, 50, 0), RGBColour(10, 220, 0)
@@ -25,12 +44,44 @@ DEFAULT_C1, DEFAULT_C2 = RGBColour(240, 50, 0), RGBColour(10, 220, 0)
 class PBar:
     def __init__(self, total: int, c1: RGBColour = DEFAULT_C1, c2: RGBColour = DEFAULT_C2):
         self.t = total
-        self.w = shutil.get_terminal_size().columns
-        self.h = shutil.get_terminal_size().lines
+        self.w, self.h = _get_terminal_size()
         self.x_pos, self.i = 0, 0
         self.start_time = time.time()
 
         self.g = RGBGradient(start=c1, end=c2, steps=self.w)
+
+        signal.signal(signal.SIGINT, self.sigint_handler)
+        signal.signal(signal.SIGWINCH, self.sigwinch_handler)
+
+    def sigint_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
+        self._reset_terminal()
+        sys.exit(0)
+
+    def sigwinch_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
+        self.handle_resize()
+
+    def handle_resize(self) -> None:
+        i, h = self.i, self.h
+        self.w, self.h = _get_terminal_size()
+
+        _print_to_terminal(
+            f'\x1b[{h - 1};0H\x1b[2K'  # move to old info line & clear it
+            f'\x1b[{h};0H\x1b[2K'  # move to old bar line & clear it
+            f'\x1b[{self.h - 1};0H\x1b[2K'  # move to info line & clear it
+            f'\x1b[{self.h};0H\x1b[2K'  # move to bar line & clear it
+            f'\x1b[0;{self.h - 2}r'  # set scrolling region, reserve 2 lines at bottom
+            f'\x1b[{self.h - 2};0H'  # move cursor to last line of scrollable area
+        )
+
+        self.g = RGBGradient(start=self.g.start, end=self.g.end, steps=self.w)
+        self._initial_bar()
+
+        self.i, self.x_pos = 0, 0
+
+        if i > 0:
+            self.update(i)
+        else:
+            self._print_info()
 
     @staticmethod
     def randgrad() -> tuple[RGBColour, RGBColour]:
@@ -94,21 +145,19 @@ class PBar:
 
         # Clear the line and print info above the progress bar
         _print_to_terminal(
-            '\x1b7'  # save cursor position
             f'\x1b[{self.h - 1};0H'  # move to line above bar
             '\x1b[2K'  # clear entire line
             f'{item_info} | {time_info}'
-            '\x1b8'  # restore cursor position
+            f'\x1b[{self.h - 2};0H'  # mo`ve cursor to last line of scrollable area
         )
 
     def _print_bar_char(self, s: str, colour: RGBColour, x_pos: int) -> None:
         _print_to_terminal(
-            '\x1b7'  # save cursor position
             f'\x1b[{self.h};{x_pos}H'  # move to bottom line
             f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m'
             f'{s}'  # the 'bar' characters
             '\x1b[0m'  # reset color
-            '\x1b8'  # restore cursor position
+            f'\x1b[{self.h - 2};0H'  # move cursor to last line of scrollable area
         )
 
     def _initial_bar(self) -> None:
@@ -134,23 +183,25 @@ class PBar:
         self.start_time = time.time()
         _print_to_terminal(
             '\x1b[?25l'  # hide cursor
-            '\n\n'  # ensure space for info line and scrollbar
-            '\x1b7'  # save cursor position
-            f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
-            '\x1b8'  # restore cursor position
-            '\x1b[2A'  # move cursor up 2 lines
+            '\n\n'  # ensure space for info line and progress bar
+            f'\x1b[0;{self.h - 2}r'  # set top & bottom margins
         )
         self._initial_bar()
         self._print_info()
         return self
 
-    def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
+    @staticmethod
+    def _reset_terminal() -> None:
+        w, h = _get_terminal_size()
         _print_to_terminal(
-            f'\x1b[0;{self.h}r'  # reset margins
-            f'\x1b[{self.h};0H'  # move to bottom line
-            '\n'
             '\x1b[?25h'  # show cursor
+            f'\x1b[0;{h}r'  # reset margins
+            f'\x1b[{h};0H'  # move to bottom line
+            '\n'
         )
+
+    def __exit__(self, _exc_type: type, _exc_val: BaseException, _exc_tb: type) -> None:
+        self._reset_terminal()
 
 
 if __name__ == '__main__':

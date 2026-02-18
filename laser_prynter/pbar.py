@@ -58,24 +58,28 @@ class PBar:
         self.is_winching = True
 
     def handle_resize(self) -> None:
-        _print_to_terminal(
-            f'\x1b[0;{self.h - 1}r'  # set top & bottom regions (margins) - reserve 2 lines
-            f'\x1b[{self.h};0H'  # move to bottom line
-            '\x1b[2K'  # clear entire line
-            f'\x1b[{self.h};0H'  # move to bottom line
-            '\x1b[2K'  # clear entire line
-            '\x1b[10A'  # move cursor up 2 lines
-        )
+        i, h = self.i, self.h
         self.w, self.h = _get_terminal_size()
+
+        _print_to_terminal(
+            f'\x1b[{h - 1};0H\x1b[2K'  # move to info line & clear it
+            f'\x1b[{h};0H\x1b[2K'  # move to bar line & clear it
+            f'\x1b[{self.h - 1};0H\x1b[2K'  # move to info line & clear it
+            f'\x1b[{self.h};0H\x1b[2K'  # move to bar line & clear it
+            f'\x1b[0;{self.h - 2}r'  # set scrolling region, reserve 2 lines at bottom
+            f'\x1b[{self.h - 2};0H'  # move cursor to last line of scrollable area
+        )
+
         self.g = RGBGradient(start=self.g.start, end=self.g.end, steps=self.w)
         self._initial_bar()
 
-        i = self.i
         self.i, self.x_pos = 0, 0
         self.is_winching = False
-        self.update(i)
 
-        self._print_info()
+        if i > 0:
+            self.update(i)
+        else:
+            self._print_info()
 
     @staticmethod
     def randgrad() -> tuple[RGBColour, RGBColour]:
@@ -141,21 +145,19 @@ class PBar:
 
         # Clear the line and print info above the progress bar
         _print_to_terminal(
-            '\x1b7'  # save cursor position
             f'\x1b[{self.h - 1};0H'  # move to line above bar
             '\x1b[2K'  # clear entire line
             f'{item_info} | {time_info}'
-            '\x1b8'  # restore cursor position
+            f'\x1b[{self.h - 2};0H'  # mo`ve cursor to last line of scrollable area
         )
 
     def _print_bar_char(self, s: str, colour: RGBColour, x_pos: int) -> None:
         _print_to_terminal(
-            '\x1b7'  # save cursor position
             f'\x1b[{self.h};{x_pos}H'  # move to bottom line
             f'\x1b[48;2;{colour.r};{colour.g};{colour.b}m'
             f'{s}'  # the 'bar' characters
             '\x1b[0m'  # reset color
-            '\x1b8'  # restore cursor position
+            f'\x1b[{self.h - 2};0H'  # move cursor to last line of scrollable area
         )
 
     def _initial_bar(self) -> None:
@@ -185,10 +187,7 @@ class PBar:
         _print_to_terminal(
             '\x1b[?25l'  # hide cursor
             '\n\n'  # ensure space for info line and scrollbar
-            '\x1b7'  # save cursor position
             f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
-            '\x1b8'  # restore cursor position
-            '\x1b[2A'  # move cursor up 2 lines
         )
         self._initial_bar()
         self._print_info()
@@ -200,7 +199,7 @@ class PBar:
         _print_to_terminal(
             '\x1b[?25h'  # show cursor
             f'\x1b[0;{h}r'  # reset margins
-            f'\x1b[{h};1000H'  # move to bottom line
+            f'\x1b[{h};0H'  # move to bottom line
             '\n'
         )
 

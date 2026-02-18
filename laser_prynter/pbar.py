@@ -50,25 +50,23 @@ class PBar:
 
         self.g = RGBGradient(start=c1, end=c2, steps=self.w)
 
-        self.is_exiting, self.is_winching = False, False
         signal.signal(signal.SIGINT, self.sigint_handler)
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
 
     def sigint_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
-        self.is_exiting = True
         self._reset_terminal()
         sys.exit(0)
 
     def sigwinch_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
-        self.is_winching = True
+        self.handle_resize()
 
     def handle_resize(self) -> None:
         i, h = self.i, self.h
         self.w, self.h = _get_terminal_size()
 
         _print_to_terminal(
-            f'\x1b[{h - 1};0H\x1b[2K'  # move to info line & clear it
-            f'\x1b[{h};0H\x1b[2K'  # move to bar line & clear it
+            f'\x1b[{h - 1};0H\x1b[2K'  # move to old info line & clear it
+            f'\x1b[{h};0H\x1b[2K'  # move to old bar line & clear it
             f'\x1b[{self.h - 1};0H\x1b[2K'  # move to info line & clear it
             f'\x1b[{self.h};0H\x1b[2K'  # move to bar line & clear it
             f'\x1b[0;{self.h - 2}r'  # set scrolling region, reserve 2 lines at bottom
@@ -79,7 +77,6 @@ class PBar:
         self._initial_bar()
 
         self.i, self.x_pos = 0, 0
-        self.is_winching = False
 
         if i > 0:
             self.update(i)
@@ -134,8 +131,6 @@ class PBar:
 
     def _print_info(self) -> None:
         'Print progress info in the line above the bar.'
-        if self.is_winching:
-            return
 
         elapsed = time.time() - self.start_time
 
@@ -174,9 +169,6 @@ class PBar:
     def update(self, n: int) -> None:
         'update the progress bar by n steps'
 
-        if self.is_winching:
-            self.handle_resize()
-
         target_pos = self._pbar_terminal_x_at(self.i + n)
 
         for pos in range(self.x_pos, target_pos + 1):
@@ -191,8 +183,8 @@ class PBar:
         self.start_time = time.time()
         _print_to_terminal(
             '\x1b[?25l'  # hide cursor
-            '\n\n'  # ensure space for info line and scrollbar
-            f'\x1b[0;{self.h - 2}r'  # set top & bottom regions (margins) - reserve 2 lines
+            '\n\n'  # ensure space for info line and progress bar
+            f'\x1b[0;{self.h - 2}r'  # set top & bottom margins
         )
         self._initial_bar()
         self._print_info()

@@ -45,7 +45,7 @@ class PBar:
 
         self.g = RGBGradient(start=c1, end=c2, steps=self.w)
 
-        self.is_exiting = False
+        self.is_exiting, self.is_winching = False, False
         signal.signal(signal.SIGINT, self.sigint_handler)
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
 
@@ -55,6 +55,9 @@ class PBar:
         sys.exit(0)
 
     def sigwinch_handler(self, _signum: int, _frame: types.FrameType | None) -> None:
+        self.is_winching = True
+
+    def handle_resize(self) -> None:
         _print_to_terminal(
             f'\x1b[0;{self.h - 1}r'  # set top & bottom regions (margins) - reserve 2 lines
             f'\x1b[{self.h};0H'  # move to bottom line
@@ -69,6 +72,7 @@ class PBar:
 
         i = self.i
         self.i, self.x_pos = 0, 0
+        self.is_winching = False
         self.update(i)
 
         self._print_info()
@@ -121,6 +125,8 @@ class PBar:
 
     def _print_info(self) -> None:
         'Print progress info in the line above the bar.'
+        if self.is_winching:
+            return
 
         elapsed = time.time() - self.start_time
 
@@ -160,6 +166,11 @@ class PBar:
 
     def update(self, n: int) -> None:
         'update the progress bar by n steps'
+
+        if self.is_winching:
+            self.handle_resize()
+            self.is_winching = False
+            return
 
         target_pos = self._pbar_terminal_x_at(self.i + n)
 

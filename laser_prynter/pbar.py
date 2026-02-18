@@ -169,8 +169,6 @@ class PBar:
 
         if self.is_winching:
             self.handle_resize()
-            self.is_winching = False
-            return
 
         target_pos = self._pbar_terminal_x_at(self.i + n)
 

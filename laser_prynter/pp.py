@@ -9,7 +9,7 @@ from typing import cast, Any, Iterator, NamedTuple, TextIO
 from pygments import highlight, console
 from pygments.lexers import JsonLexer
 from pygments.formatters import Terminal256Formatter
-from pygments.styles import get_style_by_name
+from pygments.styles import get_style_by_name, get_all_styles
 
 STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
@@ -63,7 +63,7 @@ def _json_default(obj: object) -> Any:
     elif hasattr(obj, '__dict__'):      return obj.__dict__ # class
     return str(obj)
 
-def ppd(d_obj: Any, indent: int|None=2, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
+def ppd(d_obj: Any, indent: int|None=None, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
 
@@ -85,6 +85,10 @@ def ppd(d_obj: Any, indent: int|None=2, style: str|None='dracula', random_style:
             **kwargs,
         )
 
+def random_style() -> str:
+    'return a random style name'
+    return random.choice(STYLES)
+
 def ppj(j: str, indent: int|None=None, style: str='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a JSON string'
     ppd(_normalise(json.loads(j)), indent=indent, style=style, random_style=random_style)
@@ -99,9 +103,15 @@ def pps(s: str, style: str='yellow', random_style: bool=False) -> None:
     'pretty-print a string'
     _print(ps(s, style=style, random_style=random_style))
 
-def demo(**kwargs: Any) -> None:
+def demo(all_styles: bool=False, **kwargs: Any) -> None:
     'demonstrate pretty-printing colours'
 
+    print('selected styles:')
     for s in STYLES:
-        ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, indent=None, **kwargs)
+        ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, **kwargs)
+
+    if all_styles:
+        print('\nall other styles:')
+        for s in set(get_all_styles()) - set(STYLES):
+            ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, **kwargs)
 

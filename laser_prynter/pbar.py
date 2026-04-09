@@ -140,15 +140,17 @@ class PBar:
             eta_str = self._format_time((elapsed / self.i) * (self.t - self.i))
 
         pct = (self.i / self.t) * 100
+        items_per_sec = self.i / max(elapsed, 0.001)
         item_info = f'[\x1b[1;32m{self.i}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
         time_info = f'\x1b[92m+{self._format_time(elapsed)}\x1b[0m \x1b[93m-{eta_str}\x1b[0m'
+        rate_info = f'\x1b[1;37m{items_per_sec:.2f} it/s\x1b[0m'
 
         # Clear the line and print info above the progress bar
         _print_to_terminal(
             f'\x1b[{self.h - 1};0H'  # move to line above bar
             '\x1b[2K'  # clear entire line
-            f'{item_info} | {time_info}'
-            f'\x1b[{self.h - 2};0H'  # mo`ve cursor to last line of scrollable area
+            f'{item_info} | {time_info} ({rate_info})'
+            f'\x1b[{self.h - 2};0H'  # move cursor to last line of scrollable area
         )
 
     def _print_bar_char(self, s: str, colour: RGBColour, x_pos: int) -> None:

@@ -85,6 +85,10 @@ def ppd(d_obj: Any, indent: int|None=None, style: str|None='dracula', random_sty
             **kwargs,
         )
 
+def random_style() -> str:
+    'return a random style name'
+    return random.choice(STYLES)
+
 def ppj(j: str, indent: int|None=None, style: str='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a JSON string'
     ppd(_normalise(json.loads(j)), indent=indent, style=style, random_style=random_style)

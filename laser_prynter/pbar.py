@@ -97,7 +97,7 @@ class PBar:
         if 0 <= n <= self.t:
             return math.ceil((n / self.t) * self.w)
         else:
-            raise ValueError(f'n must be between 0 and total {self.t}: {n}')
+            return self.w
 
     def _pbar_colour_at(self, n: int) -> RGBColour:
         'Where 0 <= n <= self.t, return the corresponding colour for the progress bar.'
@@ -179,7 +179,13 @@ class PBar:
         self.i += n
         self.x_pos = target_pos
 
-        self._print_info()
+        if len(self.update_buckets) == 0:
+            self._print_info()
+        elif self.i >= self.update_buckets[0]:
+            self.update_buckets.popleft()
+            self._print_info()
+        elif time.time() - self._last_update_time >= self.min_update_interval_secs:
+            self._print_info()
 
     def __enter__(self) -> PBar:
         self.start_time = time.time()

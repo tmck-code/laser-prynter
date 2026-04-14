@@ -179,13 +179,7 @@ class PBar:
         self.i += n
         self.x_pos = target_pos
 
-        if len(self.update_buckets) == 0:
-            self._print_info()
-        elif self.i >= self.update_buckets[0]:
-            self.update_buckets.popleft()
-            self._print_info()
-        elif time.time() - self._last_update_time >= self.min_update_interval_secs:
-            self._print_info()
+        self._print_info()
 
     def __enter__(self) -> PBar:
         self.start_time = time.time()

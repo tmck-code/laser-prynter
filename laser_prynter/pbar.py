@@ -139,7 +139,11 @@ class PBar:
         else:
             eta_str = self._format_time((elapsed / self.i) * (self.t - self.i))
 
-        pct = (self.i / self.t) * 100
+        if self.t == 0:
+            pct = 100.0
+        else:
+            pct = (self.i / self.t) * 100
+
         items_per_sec = self.i / max(elapsed, 0.001)
         item_info = f'[\x1b[1;32m{self.i}\x1b[0m/{self.t}] \x1b[1;97m{pct:.1f}%\x1b[0m'
         time_info = f'\x1b[92m+{self._format_time(elapsed)}\x1b[0m \x1b[93m-{eta_str}\x1b[0m'

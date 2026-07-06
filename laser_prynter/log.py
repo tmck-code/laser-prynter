@@ -23,18 +23,24 @@ usage examples to log messages:
 
     logger.debug('This is a debug message', 'arg1', 'arg2', {'key': 'value'})
     # {"timestamp": "2024-12-09T15:05:43.904749+10:00", "msg": "This is a debug message", "event": {"args": ["arg1", "arg2"], "key": "value"}}
+
+    # stdlib / third-party loggers (e.g. uvicorn) using %-style formatting
+    # are rendered automatically — no subclass needed:
+    #   logging.getLogger('uvicorn').info('Listening on %s:%d', '0.0.0.0', 8000)
+    #   # {"timestamp": "...", "msg": "Listening on 0.0.0.0:8000", "event": {}}
     ```
 '''
 
-from datetime import datetime
 import json
 import logging
-from logging.handlers import  TimedRotatingFileHandler
 import os
 import sys
-from typing import Any, TextIO
+from datetime import datetime
+from logging.handlers import TimedRotatingFileHandler
+from typing import TextIO
 
 from laser_prynter.pp import _json_default
+
 
 class LogLevel:
     'An enum type for log levels.'
@@ -50,48 +56,61 @@ DEFAULT_LOG_LEVEL = LogLevel.INFO
 
 class LogFormatter(logging.Formatter):
     'Custom log formatter that formats log messages as JSON, aka "Structured Logging".'
-    def __init__(self, defaults: dict = {}):
+
+    def __init__(self, defaults: dict | None = None, access_fields: bool = True):
         '''
         Initializes the log formatter with optional default context.
         - `defaults` is a dictionary of default context values to include in every log message.
+        - `access_fields` promotes uvicorn access-log tuples to structured event fields.
         '''
-        self.defaults = defaults
+        self.defaults = defaults or {}
+        self.access_fields = access_fields
         super().__init__()
 
     def format(self, record: logging.LogRecord) -> str:
         'Formats the log message as JSON.'
-
-        args: tuple | list | None = None
-        kwargs: Any = {}
-
-        if isinstance(record.args, tuple):
-            if len(record.args) == 1:
-                args = record.args
-            elif len(record.args) > 1:
-                *args, kwargs = record.args
-        elif isinstance(record.args, dict):
-            kwargs = record.args
-
-        record.msg = json.dumps(
-            {
-                'timestamp': datetime.now().astimezone().isoformat(),
-                'level':     record.levelname,
-                'name':      record.name,
-                'msg':       record.msg,
-                'event':     {'args': args} if args else {} | kwargs or {},
-                **({'context': self.defaults} if self.defaults else {}),
-            },
-            default=_json_default,
-        )
+        message, event = self._render(record)
+        payload = {
+            'timestamp': datetime.now().astimezone().isoformat(),
+            'level':     record.levelname,
+            'name':      record.name,
+            'msg':       message,
+            'event':     event,
+            **({'context': self.defaults} if self.defaults else {}),
+        }
+        record.msg = json.dumps(payload, default=_json_default)
         record.args = ()
         return super().format(record)
+
+    def _render(self, record: logging.LogRecord) -> tuple[str, dict]:
+        args = record.args
+
+        if self.access_fields and record.name.endswith('access') \
+                and isinstance(args, tuple) and len(args) == 5:
+            client, method, path, http_version, status = args
+            return record.getMessage(), {
+                'client': client, 'method': method, 'path': path,
+                'http_version': http_version, 'status': status,
+            }
+
+        if isinstance(args, dict):
+            return record.msg, dict(args)
+
+        if isinstance(args, tuple) and args and isinstance(args[-1], dict):
+            *positional, context = args
+            event = dict(context) if isinstance(context, dict) else {}
+            if positional:
+                event['args'] = list(positional)
+            return record.msg, event
+
+        return record.getMessage(), {}
 
 
 def _getLogger(
     name:     str,
-    level:    int                   = logging.CRITICAL,
-    handlers: list[logging.Handler] = [],
-    context:  dict                  = {},
+    level:    int                              = logging.CRITICAL,
+    handlers: list[logging.Handler] | None     = None,
+    context:  dict | None                      = None,
 ) -> logging.Logger:
     '''
     Creates a logger with the given name, level, and handlers.
@@ -121,21 +140,21 @@ def _getLogger(
             logger.removeHandler(handler)
 
     # add the new handlers
-    for handler in handlers:
+    for handler in (handlers or []):
         logger.addHandler(handler)
 
     if logger.handlers:
         # only set the first handler to use the custom formatter
-        logger.handlers[0].setFormatter(LogFormatter(defaults=context))
+        logger.handlers[0].setFormatter(LogFormatter(defaults=context or {}))
 
     return logger
 
 def getLogger(
     name:     str,
-    level:    int                 = -1,
-    stream:   TextIO       = sys.stdout,
-    files:    dict[int, str] = {},
-    context:  dict                = {},
+    level:    int                       = -1,
+    stream:   TextIO                    = sys.stdout,
+    files:    dict[int, str] | None     = None,
+    context:  dict | None               = None,
 ) -> logging.Logger:
     '''
     Creates a logger with the given name, level, and handlers.
@@ -162,7 +181,7 @@ def getLogger(
         handler.setLevel(level)
         handlers.append(handler)
 
-    for flevel, filename in files.items():
+    for flevel, filename in (files or {}).items():
         fhandler = TimedRotatingFileHandler(
             filename, when='midnight', backupCount=7, encoding='utf-8',
         )

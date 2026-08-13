@@ -1,15 +1,16 @@
-from dataclasses import asdict, is_dataclass
-from datetime import datetime
 import json
 import random
 import sys
+from collections.abc import Iterator
+from dataclasses import asdict, is_dataclass
+from datetime import datetime
 from types import FunctionType
-from typing import cast, Any, Iterator, NamedTuple, TextIO
+from typing import Any, NamedTuple, TextIO, cast
 
-from pygments import highlight, console
-from pygments.lexers import JsonLexer
+from pygments import console, highlight
 from pygments.formatters import Terminal256Formatter
-from pygments.styles import get_style_by_name, get_all_styles
+from pygments.lexers import JsonLexer
+from pygments.styles import get_all_styles, get_style_by_name
 
 STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
@@ -49,7 +50,6 @@ def _normalise(obj: object) -> Any:
         return cast(NamedTuple, obj)._asdict()
     return obj
 
-# ruff: disable[E701]
 def _json_default(obj: object) -> Any:
     'Default JSON serializer, supports most main class types'
     if   isinstance(obj, str):          return obj # str
@@ -107,11 +107,11 @@ def demo(all_styles: bool=False, **kwargs: Any) -> None:
     'demonstrate pretty-printing colours'
 
     print('selected styles:')
-    for s in STYLES:
+    for s in sorted(STYLES):
         ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, **kwargs)
 
     if all_styles:
         print('\nall other styles:')
-        for s in set(get_all_styles()) - set(STYLES):
+        for s in sorted(set(get_all_styles()) - set(STYLES)):
             ppd({'message': {'Hello': 'World', 'The answer is': 42}, 'style': s}, style=s, **kwargs)
 

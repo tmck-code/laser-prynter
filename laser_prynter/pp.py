@@ -1,16 +1,19 @@
 import json
 import random
 import sys
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from types import FunctionType
-from typing import Any, NamedTuple, TextIO, cast
+from typing import Any, ClassVar, NamedTuple, TextIO, cast
 
 from pygments import console, highlight
 from pygments.formatters import Terminal256Formatter
+from pygments.lexer import Lexer
 from pygments.lexers import JsonLexer
+from pygments.style import Style
 from pygments.styles import get_all_styles, get_style_by_name
+from pygments.token import Token
 
 STYLES = (
     'dracula', 'fruity', 'gruvbox-dark', 'gruvbox-light', 'lightbulb', 'material', 'native',
@@ -20,6 +23,57 @@ DEFAULT_STYLE = 'dracula'
 
 # disable printing by setting `pp.enabled = False`
 enabled = True
+
+
+class ColumnStyle(Style):
+    # Simply map tokens to property strings. No Color import required.
+    styles: ClassVar = {
+        Token.Column.Zero: 'ansired bold',
+        Token.Column.One: 'ansigreen',
+        Token.Column.Two: 'ansiblue',
+        Token.Column.Three: 'ansiyellow',
+        Token.Column.Four: 'ansimagenta',
+        Token.Column.Five: 'ansicyan',
+        Token.Column.Six: 'ansibrightred',
+        Token.Column.Seven: 'ansibrightgreen',
+        Token.Column.Eight: 'ansibrightblue',
+        Token.Column.Nine: 'ansibrightyellow',
+        Token.Column.Ten: 'ansibrightmagenta',
+    }
+
+
+class ColumnTabulateLexer(Lexer):
+    COL_TOKENS: ClassVar = [
+        Token.Column.Zero,
+        Token.Column.One,
+        Token.Column.Two,
+        Token.Column.Three,
+        Token.Column.Four,
+        Token.Column.Five,
+        Token.Column.Six,
+        Token.Column.Seven,
+        Token.Column.Eight,
+        Token.Column.Nine,
+        Token.Column.Ten,
+    ]
+
+    def get_tokens_unprocessed(self, text: str) -> Generator[tuple[int, Token, str], None, None]:
+        pos = 0
+        for line in text.splitlines(keepends=True):
+            parts = line.split('\t')
+            nParts = len(parts)
+
+            for col_idx, part in enumerate(parts):
+                if not part:
+                    yield pos, Token.Text, ''
+                    pos += len(part)
+                    continue
+
+                tok_type = self.COL_TOKENS[col_idx % len(self.COL_TOKENS)]
+                if col_idx < nParts - 1:
+                    part += '\t'
+                yield pos, tok_type, part
+                pos += len(part)
 
 def _output_is_redirected(stream: TextIO = sys.stdout) -> bool:
     'detect if output is being redirected to a file or pipe'
@@ -63,6 +117,18 @@ def _json_default(obj: object) -> Any:
     elif hasattr(obj, '__dict__'):      return obj.__dict__ # class
     return str(obj)
 
+def random_style() -> str:
+    'return a random style name'
+    return random.choice(STYLES)
+
+def ps(s: str, style: str='yellow', random_style: bool=False) -> str|Any:
+    'add color to a string'
+    if random_style:
+        style = random.choice(console.dark_colors + console.light_colors)
+    return console.colorize(style, s)
+
+# Main pretty-printing functions ----------------
+
 def ppd(d_obj: Any, indent: int|None=None, style: str|None='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a dict'
     d = _normalise(d_obj) # convert any namedtuples to dicts
@@ -85,23 +151,14 @@ def ppd(d_obj: Any, indent: int|None=None, style: str|None='dracula', random_sty
             **kwargs,
         )
 
-def random_style() -> str:
-    'return a random style name'
-    return random.choice(STYLES)
-
 def ppj(j: str, indent: int|None=None, style: str='dracula', random_style: bool=False, **kwargs: Any) -> None:
     'pretty-print a JSON string'
     ppd(_normalise(json.loads(j)), indent=indent, style=style, random_style=random_style)
 
-def ps(s: str, style: str='yellow', random_style: bool=False) -> str|Any:
-    'add color to a string'
-    if random_style:
-        style = random.choice(console.dark_colors + console.light_colors)
-    return console.colorize(style, s)
-
 def pps(s: str, style: str='yellow', random_style: bool=False) -> None:
     'pretty-print a string'
     _print(ps(s, style=style, random_style=random_style))
+
 
 def demo(all_styles: bool=False, **kwargs: Any) -> None:
     'demonstrate pretty-printing colours'
